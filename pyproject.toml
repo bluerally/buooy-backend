@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "bluerally-backend"
+version = "0.1.0"
+description = ""
+authors = ["jin <audwls624@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12.0"
+fastapi = "^0.104.1"
+uvicorn = "^0.24.0.post1"
+alembic = "^1.12.1"
+sqlalchemy = "^2.0.23"
+tortoise-orm = "^0.20.0"
+aerich = "^0.7.2"
+pytest = "^7.4.3"
+httpx = "^0.25.2"
+authlib = "^1.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.23.2"
+
+[tool.aerich]
+tortoise_orm = "common.config.DB_CONFIG"
+location = "./migrations"
+src_folder = "./."
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+# ref: https://beta.ruff.rs/docs/rules/
+select = ["B", "C4", "E", "F", "N", "I", "W", "UP"]
+ignore = ["F403","F405","E501","E402"]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F", "I", "UP"]
+unfixable = []
+
+per-file-ignores = {}
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Assume Python 3.12.
+target-version = "py312"
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
