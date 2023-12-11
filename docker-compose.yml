@@ -1,0 +1,19 @@
+version: '0.0'
+services:
+  app:
+    build: .
+    container_name: blue-rally-app
+    restart: always
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app
