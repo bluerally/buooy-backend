@@ -1,13 +1,14 @@
 import uvicorn
 from fastapi import FastAPI
-from common.config import DB_CONFIG, IS_PRODUCTION
-from tortoise.contrib.fastapi import register_tortoise
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from starlette.requests import Request
 from users.routers import user_router
 
 
 app = FastAPI()
 
+templates = Jinja2Templates(directory="templates")
 
 origins = [
     "http://127.0.0.1:8000",
@@ -26,17 +27,23 @@ app.add_middleware(
 app.include_router(user_router)
 
 # Database Init
-register_tortoise(
-    app=app,
-    config=DB_CONFIG,
-    generate_schemas=False if IS_PRODUCTION else True,
-    add_exception_handlers=True if IS_PRODUCTION else False,
-)
+# TODO 데이터 모델 확정되면 주석 해제
+# register_tortoise(
+#     app=app,
+#     config=DB_CONFIG,
+#     generate_schemas=False if IS_PRODUCTION else True,
+#     add_exception_handlers=True if IS_PRODUCTION else False,
+# )
 
 
 @app.get("/")
 async def health_check():
     return "Welcome to Dive Match!"
+
+
+@app.get("/home")
+async def test_auth(request: Request):
+    return templates.TemplateResponse(name="index.html", context={"request": request})
 
 
 if __name__ == "__main__":

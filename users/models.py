@@ -5,6 +5,16 @@ from tortoise.fields.base import SET_NULL
 from common.models import BaseModel
 
 
+class Sport(BaseModel):
+    name = fields.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        table = "sports"
+
+
 class Certificate(BaseModel):
     name = fields.CharField(max_length=255)
 
@@ -42,7 +52,6 @@ class CertificateLevel(BaseModel):
 class User(BaseModel):
     name = fields.CharField(max_length=255)
     email = fields.CharField(max_length=255)
-    password = fields.CharField(max_length=255)
     phone = fields.CharField(max_length=100)
     certificate_levels = fields.ManyToManyField(
         model_name="models.CertificateLevel",
@@ -50,6 +59,10 @@ class User(BaseModel):
         through="models.UserCertificateLevel",
         on_delete=SET_NULL,
     )
+    profile_image = fields.CharField(max_length=255)
+    region = fields.CharField(max_length=100)
+    introduction = fields.TextField(max_length=255, null=True, blank=True)
+    is_active = fields.BooleanField(default=True)
 
     class Meta:
         table = "users"
@@ -69,6 +82,17 @@ class UserCertificate(BaseModel):
 
     def __str__(self):
         return f"USER: {self.user} - CERTIFICATE_LEVEL: {self.certificate_level}"
+
+
+class UserInterestedSport(BaseModel):
+    user = fields.ForeignKeyField("models.User", null=True, blank=True)
+    sport = fields.ForeignKeyField("models.Sport", null=True, blank=True)
+
+    class Meta:
+        table = "user_interested_sports"
+
+    def __str__(self):
+        return f"USER: {self.user} - SPORT: {self.sport}"
 
 
 # Pydantic Model Creator
