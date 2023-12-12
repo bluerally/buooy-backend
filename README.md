@@ -20,8 +20,8 @@ Dive Match is a platform for free diving and scuba diving enthusiasts to find bu
 
 ### Install Procedure
    ```bash
-   git clone https://github.com/audwls624/dive-match.git
-   cd dive-match
+   git clone https://github.com/bluerally/bluerally-backend.git
+   cd bluerally-backend
    poetry install
    ```
 
@@ -35,7 +35,8 @@ Dive Match is a platform for free diving and scuba diving enthusiasts to find bu
 
 ### How to Run
    ```bash
-   uvicorn main:app --reload
+   docker build -t bluerally-server .
+   docker run -p 80:8080 bluerally-server
    ```
 
 ### Database Migration
