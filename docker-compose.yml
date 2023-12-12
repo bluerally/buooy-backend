@@ -1,8 +1,7 @@
 version: '3.8'
 services:
   app:
-#    image: bluerally/bluerally-be:latest
-    build: .
+    image: bluerally/bluerally-be:latest
     container_name: blue-rally-app
     restart: always
     expose:
