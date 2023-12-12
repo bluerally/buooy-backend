@@ -33,9 +33,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        IMAGE_TAG=$(git describe --tags --abbrev=0)
-        docker build -t bluerally/bluerally-be:$IMAGE_TAG .
-        docker push bluerally/bluerally-be:$IMAGE_TAG
+        docker build -t bluerally/bluerally-be:${{ github.run_number }} .
+        docker push bluerally/bluerally-be:${{ github.run_number }}
 
     - name: Zip the build
       run: zip -r blue-rally-build.zip .
