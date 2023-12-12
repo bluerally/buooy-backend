@@ -1,16 +1,18 @@
 #!/bin/bash
 
-echo "> 배포 시작" >> /home/ec2-user/deploy.log
+echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 시작" >> /home/ec2-user/deploy.log
 
 cd /home/ec2-user/app
 
-echo "> Pulling latest Docker image" >> /home/ec2-user/deploy.log
-sudo docker pull bluerally/bluerally-be:latest
+IMAGE_TAG=$(git describe --tags --abbrev=0)
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Pulling latest Docker image with tag: $IMAGE_TAG" >> /home/ec2-user/deploy.log
+sudo docker pull bluerally/bluerally-be:$IMAGE_TAG
 
-echo "> Starting Docker Compose services" >> /home/ec2-user/deploy.log
+sudo sed -i "s/image: bluerally\/bluerally-be:.*/image: bluerally\/bluerally-be:$IMAGE_TAG/" docker-compose.yml
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Starting Docker Compose services" >> /home/ec2-user/deploy.log
 sudo docker-compose up -d
 
-echo "> Cleaning up old Docker images" >> /home/ec2-user/deploy.log
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Cleaning up old Docker images" >> /home/ec2-user/deploy.log
 sudo docker image prune -f
 
-echo "> 배포 완료" >> /home/ec2-user/deploy.log
+echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 완료" >> /home/ec2-user/deploy.log

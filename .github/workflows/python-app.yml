@@ -24,17 +24,12 @@ jobs:
       run: |
         pip install poetry
         poetry install
-        
-    - name: Login to Docker Hub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     - name: Build and push Docker image
       run: |
-        docker build -t bluerally/bluerally-be:${{ github.run_number }} .
-        docker push bluerally/bluerally-be:${{ github.run_number }}
+        IMAGE_TAG=${GITHUB_REF#refs/tags/}
+        docker build -t bluerally/bluerally-be:$IMAGE_TAG .
+        docker push bluerally/bluerally-be:$IMAGE_TAG
 
     - name: Zip the build
       run: zip -r blue-rally-build.zip .
