@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
 
 jobs:
   deploy:
@@ -22,6 +24,18 @@ jobs:
       run: |
         pip install poetry
         poetry install
+        
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build and push Docker image
+      run: |
+        IMAGE_TAG=$(git describe --tags --abbrev=0)
+        docker build -t bluerally/bluerally-be:$IMAGE_TAG .
+        docker push bluerally/bluerally-be:$IMAGE_TAG
 
     - name: Zip the build
       run: zip -r blue-rally-build.zip .
