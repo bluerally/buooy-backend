@@ -1,13 +1,73 @@
-from fastapi import APIRouter, status
-from users.models import CertificateLevel, Certificate
-from common.dtos import BaseResponse
-from users.models import CertificateName_Pydantic, CertificateLevel_Pydantic
 from typing import List
+
+from fastapi import APIRouter
+from fastapi import HTTPException, status
+
+from common.constants import AUTH_PLATFORM_GOOGLE
+from common.dtos import BaseResponse
+from users.auth import GoogleAuth
+from users.dtos import (
+    SocialLoginCallbackResponse,
+    UserInfo,
+    SocialLoginRedirectResponse,
+    RedirectUrlInfo,
+)
+from users.models import CertificateLevel, Certificate
+from users.models import CertificateName_Pydantic, CertificateLevel_Pydantic
+from common.choices import SocialAuthPlatform
 
 
 user_router = APIRouter(
     prefix="/api/user",
 )
+
+
+@user_router.get(
+    "/auth/redirect/{platform}", response_model=SocialLoginRedirectResponse
+)
+async def get_social_login_redirect_url(platform: SocialAuthPlatform):
+    if platform == "google":
+        google_auth = GoogleAuth()
+        redirect_url = google_auth.get_login_redirect_url()
+        redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
+
+        return BaseResponse(
+            status_code=status.HTTP_200_OK,
+            message="Google redirect URL fetched successfully",
+            data=redirect_url_info,
+        )
+
+    # Naver와 Kakao에 대한 처리를 여기에 추가
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
+        )
+
+
+@user_router.get(
+    "/auth/callback/{platform}", response_model=SocialLoginCallbackResponse
+)
+async def social_auth_callback(platform: str, code: str):
+    if platform == AUTH_PLATFORM_GOOGLE:
+        try:
+            google_auth = GoogleAuth()
+            user_info_dict = await google_auth.get_user_data(code)
+            # TODO 가공 로직 변경 필요
+            user_info = UserInfo(**user_info_dict)
+            return SocialLoginCallbackResponse(
+                status_code=status.HTTP_200_OK,
+                message="Google user fetched successfully",
+                data=user_info,
+            )
+        except HTTPException as e:
+            return SocialLoginCallbackResponse(
+                status_code=e.status_code, message=str(e.detail), data=None
+            )
+    # Naver와 Kakao 처리 추가 예정
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
+        )
 
 
 @user_router.get(

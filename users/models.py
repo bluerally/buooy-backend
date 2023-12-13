@@ -71,6 +71,26 @@ class User(BaseModel):
         return f"{self.id} - {self.name}"
 
 
+# TODO user token 관리 테이블 조정 필요
+class UserToken(BaseModel):
+    user = fields.ForeignKeyField(
+        "models.User", related_name="tokens", null=True, on_delete=fields.SET_NULL
+    )
+    refresh_token = fields.TextField(index=True)
+    token_type = fields.CharField(max_length=50)
+    expires_at = fields.DatetimeField(null=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+    is_active = fields.BooleanField(default=True)
+
+    class Meta:
+        table = "user_tokens"
+        indexes = [("user", "is_active"), ("refresh_token",)]
+
+    def __str__(self):
+        return f"UserToken for {self.user.id} ({self.token_type}), expires_at: {self.expires_at.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+
+
 class UserCertificate(BaseModel):
     user = fields.ForeignKeyField("models.User", null=True, blank=True)
     certificate_level = fields.ForeignKeyField(

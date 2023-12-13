@@ -5,6 +5,6 @@ T = TypeVar("T")
 
 
 class BaseResponse[T](BaseModel):
-    status_code: int
-    message: str
+    status_code: int = None
+    message: str = ""
     data: Optional[T] = Field(default=None)

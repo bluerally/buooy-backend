@@ -42,7 +42,7 @@ app.include_router(user_router)
 
 @app.get("/")
 async def health_check():
-    return "Welcome to Dive Match!"
+    return "Health Check Succeed!"
 
 
 @app.get("/home")
