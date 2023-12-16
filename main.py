@@ -4,6 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from users.routers import user_router
+from tortoise.contrib.fastapi import register_tortoise
+from common.config import DB_CONFIG, IS_PRODUCTION
+from common.middlewares import AuthMiddleware
 
 
 app = FastAPI()
@@ -16,6 +19,7 @@ origins = [
     "http://127.0.0.1:80",
     "https://www.bluerally.net",
     "http://www.bluerally.net",
+    "http://localhost:3000",
 ]
 
 # Middleware
@@ -26,18 +30,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthMiddleware)
 
 # router include
 app.include_router(user_router)
 
 # Database Init
-# TODO 데이터 모델 확정되면 주석 해제
-# register_tortoise(
-#     app=app,
-#     config=DB_CONFIG,
-#     generate_schemas=False if IS_PRODUCTION else True,
-#     add_exception_handlers=True if IS_PRODUCTION else False,
-# )
+register_tortoise(
+    app=app,
+    config=DB_CONFIG,
+    generate_schemas=False,
+    add_exception_handlers=False if IS_PRODUCTION else True,
+)
 
 
 @app.get("/")

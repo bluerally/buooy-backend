@@ -20,6 +20,9 @@ jinja2 = "^3.1.2"
 google-auth = "^2.25.2"
 google-auth-oauthlib = "^1.2.0"
 google-auth-httplib2 = "^0.2.0"
+aiohttp = "^3.9.1"
+asyncpg = "^0.29.0"
+pyjwt = "^2.8.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -46,7 +49,7 @@ unfixable = []
 per-file-ignores = {}
 
 # Same as Black.
-line-length = 88
+line-length = 120
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"

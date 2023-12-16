@@ -22,13 +22,12 @@ user_router = APIRouter(
 )
 
 
-@user_router.get(
-    "/auth/redirect/{platform}", response_model=SocialLoginRedirectResponse
-)
+@user_router.get("/auth/redirect", response_model=SocialLoginRedirectResponse)
 async def get_social_login_redirect_url(platform: SocialAuthPlatform):
-    if platform == "google":
+    # async def get_social_login_redirect_url():
+    if platform == AUTH_PLATFORM_GOOGLE:
         google_auth = GoogleAuth()
-        redirect_url = google_auth.get_login_redirect_url()
+        redirect_url = await google_auth.get_login_redirect_url()
         redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
 
         return BaseResponse(
@@ -44,9 +43,7 @@ async def get_social_login_redirect_url(platform: SocialAuthPlatform):
         )
 
 
-@user_router.get(
-    "/auth/callback/{platform}", response_model=SocialLoginCallbackResponse
-)
+@user_router.get("/auth/callback", response_model=SocialLoginCallbackResponse)
 async def social_auth_callback(platform: str, code: str):
     if platform == AUTH_PLATFORM_GOOGLE:
         try:

@@ -61,7 +61,7 @@ class User(BaseModel):
     )
     profile_image = fields.CharField(max_length=255)
     region = fields.CharField(max_length=100)
-    introduction = fields.TextField(max_length=255, null=True, blank=True)
+    introduction = fields.TextField(null=True, blank=True)
     is_active = fields.BooleanField(default=True)
 
     class Meta:
@@ -76,7 +76,7 @@ class UserToken(BaseModel):
     user = fields.ForeignKeyField(
         "models.User", related_name="tokens", null=True, on_delete=fields.SET_NULL
     )
-    refresh_token = fields.TextField(index=True)
+    refresh_token = fields.CharField(max_length=255, index=True)
     token_type = fields.CharField(max_length=50)
     expires_at = fields.DatetimeField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
