@@ -15,6 +15,11 @@ GOOGLE_CLIENT_SECRET=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_SECRET" --qu
 SECRET_KEY=$(aws ssm get-parameter --name "/SECRET_KEY" --query "Parameter.Value" --output text)
 APP_ENV=$(aws ssm get-parameter --name "/APP_ENV" --query "Parameter.Value" --output text)
 
+# 환경 변수 로깅
+echo "DB_HOST: $DB_HOST" >> /home/ec2-user/deploy.log
+echo "DB_PORT: $DB_HOST" >> /home/ec2-user/deploy.log
+echo "DB_NAME: $DB_HOST" >> /home/ec2-user/deploy.log
+
 # 환경변수를 Docker Compose 환경에 전달
 export DB_HOST
 export DB_PORT
@@ -44,6 +49,6 @@ sudo docker-compose run --rm app aerich upgrade
 sudo docker-compose up -d
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > Cleaning up old Docker images" >> /home/ec2-user/deploy.log
-sudo docker image prune -f
+sudo docker image prune -a -f
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 완료" >> /home/ec2-user/deploy.log
