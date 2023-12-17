@@ -18,7 +18,7 @@ def login_required(endpoint_func: Callable[..., T]) -> Callable[..., T]:
             raise HTTPException(status_code=400, detail="Request object not found")
 
         if request.state.user is None:
-            raise HTTPException(status_code=403, detail="Not authenticated")
+            raise HTTPException(status_code=401, detail="Not authenticated")
 
         return await endpoint_func(*args, **kwargs)
 

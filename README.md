@@ -42,7 +42,7 @@ Dive Match is a platform for free diving and scuba diving enthusiasts to find bu
 ### Database Migration
    - Initialization
    ```bash
-   aerich init -t common.config.DB_CONFIG
+   aerich init -t common.config.TORTOISE_ORM
    ```
    - Generate Migration
    ```bash

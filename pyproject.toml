@@ -23,13 +23,14 @@ google-auth-httplib2 = "^0.2.0"
 aiohttp = "^3.9.1"
 asyncpg = "^0.29.0"
 pyjwt = "^2.8.0"
+aiomysql = "^0.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.23.2"
 
 [tool.aerich]
-tortoise_orm = "common.config.DB_CONFIG"
+tortoise_orm = "common.config.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
 

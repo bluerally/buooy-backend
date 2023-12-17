@@ -16,22 +16,23 @@ IS_PRODUCTION = APP_ENV == APP_ENV_PROD
 
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
 # if IS_PRODUCTION:
-if not APP_ENV == APP_ENV_TEST:
+if APP_ENV != APP_ENV_TEST:
     DB_CONNECTION = {
-        "engine": "tortoise.backends.asyncpg",
+        "engine": "tortoise.backends.mysql",
         "credentials": {
             "host": getenv("DB_HOST", "localhost"),
             "port": getenv("DB_PORT", "23306"),
             "user": getenv("DB_USER", "root"),
-            "password": getenv("DB_PASSWORD", "123456"),
+            "password": getenv("DB_PASSWORD", "password"),
             "database": getenv("DB_NAME", "blue_rally_db"),
         },
     }
 else:
     # TEST 환경에서는 메모리 DB 사용
-    DB_CONNECTION = "sqlite://:memory:"
+    # DB_CONNECTION = "sqlite://:memory:"
+    DB_CONNECTION = SQLITE_DB_URL
 
-DB_CONFIG = {
+TORTOISE_ORM = {
     "connections": {
         "default": DB_CONNECTION,
     },

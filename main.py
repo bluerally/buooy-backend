@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from users.routers import user_router
 from tortoise.contrib.fastapi import register_tortoise
-from common.config import DB_CONFIG, IS_PRODUCTION
+from common.config import TORTOISE_ORM, IS_PRODUCTION
 from common.middlewares import AuthMiddleware
 
 
@@ -38,7 +38,7 @@ app.include_router(user_router)
 # Database Init
 register_tortoise(
     app=app,
-    config=DB_CONFIG,
+    config=TORTOISE_ORM,
     generate_schemas=False,
     add_exception_handlers=False if IS_PRODUCTION else True,
 )

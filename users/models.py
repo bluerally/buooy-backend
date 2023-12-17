@@ -1,6 +1,5 @@
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
-from tortoise.fields.base import SET_NULL
 
 from common.models import BaseModel
 
@@ -30,8 +29,12 @@ class Certificate(BaseModel):
 
 class CertificateLevel(BaseModel):
     certificate = fields.ForeignKeyField(
-        "models.Certificate", related_name="certificate_levels"
+        "models.Certificate",
+        related_name="certificate_levels",
+        null=True,
+        on_delete=fields.SET_NULL,
     )
+
     level = fields.CharField(max_length=100)
 
     def certificate_name(self) -> str:
@@ -50,17 +53,18 @@ class CertificateLevel(BaseModel):
 
 
 class User(BaseModel):
-    name = fields.CharField(max_length=255)
-    email = fields.CharField(max_length=255)
-    phone = fields.CharField(max_length=100)
+    sns_id = fields.CharField(null=True, blank=True, max_length=255, index=True)
+    name = fields.CharField(null=True, blank=True, max_length=255)
+    email = fields.CharField(null=True, blank=True, max_length=255)
+    phone = fields.CharField(null=True, blank=True, max_length=100)
     certificate_levels = fields.ManyToManyField(
         model_name="models.CertificateLevel",
         related_name="users",
-        through="models.UserCertificateLevel",
-        on_delete=SET_NULL,
+        through="models.UserCertificate",
     )
-    profile_image = fields.CharField(max_length=255)
-    region = fields.CharField(max_length=100)
+    profile_image = fields.CharField(null=True, blank=True, max_length=255)
+    profile_image_add = fields.CharField(null=True, blank=True, max_length=255)
+    region = fields.CharField(null=True, blank=True, max_length=100)
     introduction = fields.TextField(null=True, blank=True)
     is_active = fields.BooleanField(default=True)
 
@@ -92,9 +96,9 @@ class UserToken(BaseModel):
 
 
 class UserCertificate(BaseModel):
-    user = fields.ForeignKeyField("models.User", null=True, blank=True)
+    user = fields.ForeignKeyField("models.User", null=True, on_delete=fields.SET_NULL)
     certificate_level = fields.ForeignKeyField(
-        "models.CertificateLevel", null=True, blank=True
+        "models.CertificateLevel", null=True, on_delete=fields.SET_NULL
     )
 
     class Meta:
@@ -105,8 +109,8 @@ class UserCertificate(BaseModel):
 
 
 class UserInterestedSport(BaseModel):
-    user = fields.ForeignKeyField("models.User", null=True, blank=True)
-    sport = fields.ForeignKeyField("models.Sport", null=True, blank=True)
+    user = fields.ForeignKeyField("models.User", null=True, on_delete=fields.SET_NULL)
+    sport = fields.ForeignKeyField("models.Sport", null=True, on_delete=fields.SET_NULL)
 
     class Meta:
         table = "user_interested_sports"

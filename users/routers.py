@@ -1,7 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter
-from fastapi import HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 
 from common.constants import AUTH_PLATFORM_GOOGLE
 from common.dtos import BaseResponse
@@ -11,10 +10,19 @@ from users.dtos import (
     UserInfo,
     SocialLoginRedirectResponse,
     RedirectUrlInfo,
+    LoginResponseData,
 )
-from users.models import CertificateLevel, Certificate
-from users.models import CertificateName_Pydantic, CertificateLevel_Pydantic
+from users.models import (
+    CertificateLevel,
+    Certificate,
+    User,
+    CertificateName_Pydantic,
+    CertificateLevel_Pydantic,
+    UserToken,
+)
 from common.choices import SocialAuthPlatform
+from users.utils import create_refresh_token, create_access_token
+from common.decorators import login_required
 
 
 user_router = APIRouter(
@@ -23,14 +31,15 @@ user_router = APIRouter(
 
 
 @user_router.get("/auth/redirect", response_model=SocialLoginRedirectResponse)
-async def get_social_login_redirect_url(platform: SocialAuthPlatform):
-    # async def get_social_login_redirect_url():
+async def get_social_login_redirect_url(
+    platform: SocialAuthPlatform
+) -> SocialLoginRedirectResponse:
     if platform == AUTH_PLATFORM_GOOGLE:
         google_auth = GoogleAuth()
         redirect_url = await google_auth.get_login_redirect_url()
         redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
 
-        return BaseResponse(
+        return SocialLoginRedirectResponse(
             status_code=status.HTTP_200_OK,
             message="Google redirect URL fetched successfully",
             data=redirect_url_info,
@@ -44,17 +53,36 @@ async def get_social_login_redirect_url(platform: SocialAuthPlatform):
 
 
 @user_router.get("/auth/callback", response_model=SocialLoginCallbackResponse)
-async def social_auth_callback(platform: str, code: str):
+async def social_auth_callback(platform: str, code: str) -> SocialLoginCallbackResponse:
     if platform == AUTH_PLATFORM_GOOGLE:
         try:
             google_auth = GoogleAuth()
             user_info_dict = await google_auth.get_user_data(code)
             # TODO 가공 로직 변경 필요
-            user_info = UserInfo(**user_info_dict)
+            user_info = UserInfo(
+                sns_id=user_info_dict.get("sub"),
+                email=user_info_dict.get("email"),
+                name=user_info_dict.get("name"),
+                profile_image=user_info_dict.get("picture"),
+            )
+
+            # 데이터베이스에서 사용자 찾기 또는 생성
+            user = await User.get_or_none(sns_id=user_info.sns_id)
+            if not user:
+                user = await User.create(**user_info_dict)
+
+            # Access, Refresh 토큰 생성 및 저장
+            access_token = create_access_token(data={"user_id": user.id})
+            refresh_token, expires_at = await create_refresh_token(user)
+
             return SocialLoginCallbackResponse(
                 status_code=status.HTTP_200_OK,
-                message="Google user fetched successfully",
-                data=user_info,
+                message="Login successful",
+                data=LoginResponseData(
+                    user_info=user_info,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                ),
             )
         except HTTPException as e:
             return SocialLoginCallbackResponse(
@@ -65,6 +93,49 @@ async def social_auth_callback(platform: str, code: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
         )
+
+
+@user_router.post("/auth/token/refresh", response_model=SocialLoginCallbackResponse)
+async def refresh_token_endpoint(refresh_token: str) -> SocialLoginCallbackResponse:
+    user_token = await UserToken.get_or_none(
+        refresh_token=refresh_token, is_active=True
+    ).prefetch_related("user")
+
+    if not user_token or not user_token.user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or inactive token"
+        )
+
+    # 새로운 Access 토큰 생성
+    access_token = create_access_token(data={"user_id": user_token.user.id})
+    # 새로운 Refresh 토큰 생성 및 저장
+    new_refresh_token, expires_at = await create_refresh_token(user_token.user)
+
+    # 이전 리프레시 토큰 비활성화
+    user_token.is_active = False
+    await user_token.save()
+
+    return SocialLoginCallbackResponse(
+        status_code=status.HTTP_200_OK,
+        message="Token refreshed successfully",
+        data=LoginResponseData(
+            user_info=UserInfo(**user_token.user.__dict__),
+            access_token=access_token,
+            refresh_token=new_refresh_token,
+        ),
+    )
+
+
+@user_router.post("/auth/logout", response_model=BaseResponse)
+@login_required
+async def logout(request: Request) -> BaseResponse:
+    user = request.state.user
+    # 사용자와 연관된 모든 리프레시 토큰을 비활성화
+    await UserToken.filter(user=user, is_active=True).update(is_active=False)
+
+    return BaseResponse(
+        status_code=status.HTTP_200_OK, message="Logout successful", data=None
+    )
 
 
 @user_router.get(
@@ -88,5 +159,7 @@ async def get_certificate_levels(certificate_id: int) -> BaseResponse:
         CertificateLevel.filter(certificate_id=certificate_id)
     )
     return BaseResponse(
-        status_code=200, message="Certificate levels fetched successfully", data=levels
+        status_code=status.HTTP_200_OK,
+        message="Certificate levels fetched successfully",
+        data=levels,
     )

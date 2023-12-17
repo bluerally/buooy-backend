@@ -5,13 +5,26 @@ from common.dtos import BaseResponse
 
 
 class UserInfo(BaseModel):
-    id: Optional[str] = None
-    email: Optional[str] = None
-    name: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    picture: Optional[str] = None
-    locale: Optional[str] = None
+    sns_id: str = ""
+    name: str = ""
+    email: str = ""
+    profile_image: str = ""
+    # iss: Optional[str] = None
+    # sub: Optional[str] = None
+    # aud: Optional[str] = None
+    # iat: Optional[str] = None
+    # exp: Optional[str] = None
+    # email: Optional[str] = None
+    # name: Optional[str] = None
+    # picture: Optional[str] = None
+    # given_name: Optional[str] = None
+    # family_name: Optional[str] = None
+
+
+class LoginResponseData(BaseModel):
+    user_info: UserInfo
+    access_token: str
+    refresh_token: str
 
 
 class RedirectUrlInfo(BaseModel):
@@ -23,4 +36,4 @@ class SocialLoginRedirectResponse(BaseResponse):
 
 
 class SocialLoginCallbackResponse(BaseResponse):
-    data: Optional[UserInfo] = None
+    data: Optional[LoginResponseData] = None

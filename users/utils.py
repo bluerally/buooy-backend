@@ -1,9 +1,11 @@
 import jwt
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from fastapi import HTTPException
 from zoneinfo import ZoneInfo
 from common.config import SECRET_KEY, ALGORITHM
+from users.models import UserToken
 
 
 def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -24,3 +26,15 @@ def verify_access_token(token: str) -> Dict:
         return decoded_token if decoded_token else None
     except jwt.PyJWTError:
         raise HTTPException(status_code=403, detail="Could not validate credentials")
+
+
+async def create_refresh_token(user, token_type="Bearer", expires_in_days=3):
+    refresh_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now() + timedelta(days=expires_in_days)
+    await UserToken.create(
+        user=user,
+        refresh_token=refresh_token,
+        token_type=token_type,
+        expires_at=expires_at,
+    )
+    return refresh_token
