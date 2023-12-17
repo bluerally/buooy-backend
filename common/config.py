@@ -29,8 +29,7 @@ if APP_ENV != APP_ENV_TEST:
     }
 else:
     # TEST 환경에서는 메모리 DB 사용
-    # DB_CONNECTION = "sqlite://:memory:"
-    DB_CONNECTION = SQLITE_DB_URL
+    DB_CONNECTION = "sqlite://:memory:"
 
 TORTOISE_ORM = {
     "connections": {
