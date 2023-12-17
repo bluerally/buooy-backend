@@ -5,9 +5,11 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 시작" >> /home/ec2-user/deploy.log
 cd /home/ec2-user/app
 
 # .env 파일 생성 또는 초기화
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Initializing .env" >> /home/ec2-user/deploy.log
 echo "" > .env
 
 # 환경 변수 가져오기 및 .env 파일에 기록
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Writing Environmental variables into .env file" >> /home/ec2-user/deploy.log
 echo "DB_HOST=$(aws ssm get-parameter --name "/DB_HOST" --query "Parameter.Value" --output text)" >> .env
 echo "DB_PORT=$(aws ssm get-parameter --name "/DB_PORT" --query "Parameter.Value" --output text)" >> .env
 echo "DB_NAME=$(aws ssm get-parameter --name "/DB_NAME" --query "Parameter.Value" --output text)" >> .env
