@@ -83,7 +83,7 @@ def test_user_and_tokens():
 
         # 테스트 사용자의 Access 토큰과 Refresh 토큰 생성
         access_token = create_access_token(data={"user_id": user.id})
-        refresh_token, _ = await create_refresh_token(user)
+        refresh_token = await create_refresh_token(user)
 
         return {
             "user": user,

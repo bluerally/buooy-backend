@@ -70,8 +70,14 @@ class GoogleAuth(SocialLogin):
                 )
 
             try:
+                # id_info = id_token.verify_oauth2_token(
+                #     token_response.json()["id_token"],
+                #     requests.Request(),
+                #     self.CLIENT_ID,
+                # )
+                response_content = await token_response.json()
                 id_info = id_token.verify_oauth2_token(
-                    token_response.json()["id_token"],
+                    response_content["id_token"],
                     requests.Request(),
                     self.CLIENT_ID,
                 )

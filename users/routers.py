@@ -1,7 +1,7 @@
 from typing import List
-
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Request
-
+from zoneinfo import ZoneInfo
 from common.constants import AUTH_PLATFORM_GOOGLE
 from common.dtos import BaseResponse
 from users.auth import GoogleAuth
@@ -11,6 +11,7 @@ from users.dtos import (
     SocialLoginRedirectResponse,
     RedirectUrlInfo,
     LoginResponseData,
+    RefreshTokenRequest,
 )
 from users.models import (
     CertificateLevel,
@@ -73,7 +74,7 @@ async def social_auth_callback(platform: str, code: str) -> SocialLoginCallbackR
 
             # Access, Refresh 토큰 생성 및 저장
             access_token = create_access_token(data={"user_id": user.id})
-            refresh_token, expires_at = await create_refresh_token(user)
+            refresh_token = await create_refresh_token(user)
 
             return SocialLoginCallbackResponse(
                 status_code=status.HTTP_200_OK,
@@ -96,9 +97,14 @@ async def social_auth_callback(platform: str, code: str) -> SocialLoginCallbackR
 
 
 @user_router.post("/auth/token/refresh", response_model=SocialLoginCallbackResponse)
-async def refresh_token_endpoint(refresh_token: str) -> SocialLoginCallbackResponse:
+async def refresh_token_endpoint(
+    body: RefreshTokenRequest
+) -> SocialLoginCallbackResponse:
+    refresh_token = body.refresh_token
     user_token = await UserToken.get_or_none(
-        refresh_token=refresh_token, is_active=True
+        refresh_token=refresh_token,
+        is_active=True,
+        expires_at__gte=datetime.now(ZoneInfo("UTC")),
     ).prefetch_related("user")
 
     if not user_token or not user_token.user:
@@ -109,7 +115,7 @@ async def refresh_token_endpoint(refresh_token: str) -> SocialLoginCallbackRespo
     # 새로운 Access 토큰 생성
     access_token = create_access_token(data={"user_id": user_token.user.id})
     # 새로운 Refresh 토큰 생성 및 저장
-    new_refresh_token, expires_at = await create_refresh_token(user_token.user)
+    new_refresh_token = await create_refresh_token(user_token.user)
 
     # 이전 리프레시 토큰 비활성화
     user_token.is_active = False

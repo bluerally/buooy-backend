@@ -37,3 +37,7 @@ class SocialLoginRedirectResponse(BaseResponse):
 
 class SocialLoginCallbackResponse(BaseResponse):
     data: Optional[LoginResponseData] = None
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

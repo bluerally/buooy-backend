@@ -1,6 +1,6 @@
 import asyncio
 
-import httpx
+from httpx import AsyncClient
 import pytest
 
 from common.test_config import drop_databases, db_init, clean_up
@@ -37,5 +37,5 @@ def prepare_db(request, loop):
 def client():
     from main import app
 
-    client = httpx.AsyncClient(base_url="http://test", app=app)
+    client = AsyncClient(base_url="http://test", app=app)
     yield client
