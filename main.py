@@ -6,6 +6,7 @@ from starlette.requests import Request
 from users.routers import user_router
 from common.config import SQLITE_DB_URL
 from tortoise import Tortoise
+from tortoise.contrib.fastapi import register_tortoise
 from common.middlewares import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -43,18 +44,33 @@ app.add_middleware(AuthMiddleware)
 # router include
 app.include_router(user_router)
 
+
 # Database Init
-# register_tortoise(
-#     app=app,
-#     config=TORTOISE_ORM,
-#     generate_schemas=False,
-#     add_exception_handlers=False if IS_PRODUCTION else True,
-# )
+@app.router.lifespan.startup
+async def startup_event():
+    register_tortoise(
+        app,
+        db_url="sqlite://:memory:",
+        modules={"models": ["your_app.models"]},
+        generate_schemas=True,
+        add_exception_handlers=True,
+    )
+
+
+@app.router.lifespan.shutdown
+async def shutdown_event():
+    await Tortoise.close_connections()
 
 
 @app.get("/")
 async def health_check():
     return "Health Check Succeed!"
+
+
+@app.get("/test")
+async def test_endpoint(request: Request):
+    print(request)
+    return "Hello fuckers!"
 
 
 @app.get("/home")
