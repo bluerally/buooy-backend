@@ -4,12 +4,20 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from users.routers import user_router
-from tortoise.contrib.fastapi import register_tortoise
-from common.config import TORTOISE_ORM, IS_PRODUCTION
+from common.config import SQLITE_DB_URL
+from tortoise import Tortoise
 from common.middlewares import AuthMiddleware
+from contextlib import asynccontextmanager
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    await Tortoise.init(db_url=SQLITE_DB_URL, modules={"models": ["users.models"]})
+    yield
+    await Tortoise.close_connections()
+
+
+app = FastAPI(lifespan=lifespan)
 
 templates = Jinja2Templates(directory="templates")
 
@@ -36,12 +44,12 @@ app.add_middleware(AuthMiddleware)
 app.include_router(user_router)
 
 # Database Init
-register_tortoise(
-    app=app,
-    config=TORTOISE_ORM,
-    generate_schemas=False,
-    add_exception_handlers=False if IS_PRODUCTION else True,
-)
+# register_tortoise(
+#     app=app,
+#     config=TORTOISE_ORM,
+#     generate_schemas=False,
+#     add_exception_handlers=False if IS_PRODUCTION else True,
+# )
 
 
 @app.get("/")
