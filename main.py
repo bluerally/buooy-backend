@@ -13,7 +13,6 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     await Tortoise.init(config=TORTOISE_ORM, timezone="Asia/Seoul")
-    await Tortoise.init(config=TORTOISE_ORM)
     yield
     await Tortoise.close_connections()
 
