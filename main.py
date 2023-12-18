@@ -8,17 +8,25 @@ from common.config import TORTOISE_ORM
 from tortoise import Tortoise
 from common.middlewares import AuthMiddleware
 from contextlib import asynccontextmanager
+# from tortoise.contrib.fastapi import register_tortoise
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    # await Tortoise.init(config=TORTOISE_ORM, modules={"models": ["users.models", "aerich.models"]}, timezone="Asia/Seoul")
     await Tortoise.init(config=TORTOISE_ORM, timezone="Asia/Seoul")
+    await Tortoise.init(config=TORTOISE_ORM)
     yield
     await Tortoise.close_connections()
 
 
 app = FastAPI(lifespan=lifespan)
+# app = FastAPI()
+# register_tortoise(
+#     app,
+#     config=TORTOISE_ORM,
+#     generate_schemas=False,  # 필요에 따라 True로 설정
+#     add_exception_handlers=True,
+# )
 
 templates = Jinja2Templates(directory="templates")
 
