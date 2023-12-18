@@ -9,7 +9,3 @@ RUN pip install poetry && poetry config virtualenvs.create false && poetry insta
 COPY . /app
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-# 환경 변수 로깅 및 애플리케이션 시작
-#CMD echo "DB_HOST: $DB_HOST" && \
-#    echo "DB_PORT: $DB_PORT" && \
-#    uvicorn main:app --host 0.0.0.0 --port 8080

@@ -32,10 +32,16 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') > Starting Docker Compose services" >> /home/
 sudo docker-compose down
 
 # Aerich 마이그레이션 실행
-echo "$(date '+%Y-%m-%d %H:%M:%S') > Running Aerich database migrations" >> /home/ec2-user/deploy.log
-sudo docker-compose run --rm app aerich upgrade
+#echo "$(date '+%Y-%m-%d %H:%M:%S') > Running Aerich database migrations" >> /home/ec2-user/deploy.log
+#sudo docker-compose run --rm app aerich upgrade
 
 sudo docker-compose up -d
+
+sleep 10
+
+# Running Aerich database migrations
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Running Aerich database migrations" >> /home/ec2-user/deploy.log
+sudo docker-compose exec app aerich upgrade
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > Cleaning up old Docker images" >> /home/ec2-user/deploy.log
 sudo docker image prune -a -f

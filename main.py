@@ -4,16 +4,16 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from users.routers import user_router
-from common.config import SQLITE_DB_URL
+from common.config import TORTOISE_ORM
 from tortoise import Tortoise
-from tortoise.contrib.fastapi import register_tortoise
 from common.middlewares import AuthMiddleware
 from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    await Tortoise.init(db_url=SQLITE_DB_URL, modules={"models": ["users.models"]})
+    # await Tortoise.init(config=TORTOISE_ORM, modules={"models": ["users.models", "aerich.models"]}, timezone="Asia/Seoul")
+    await Tortoise.init(config=TORTOISE_ORM, timezone="Asia/Seoul")
     yield
     await Tortoise.close_connections()
 
@@ -45,23 +45,6 @@ app.add_middleware(AuthMiddleware)
 app.include_router(user_router)
 
 
-# Database Init
-@app.router.lifespan.startup
-async def startup_event():
-    register_tortoise(
-        app,
-        db_url="sqlite://:memory:",
-        modules={"models": ["your_app.models"]},
-        generate_schemas=True,
-        add_exception_handlers=True,
-    )
-
-
-@app.router.lifespan.shutdown
-async def shutdown_event():
-    await Tortoise.close_connections()
-
-
 @app.get("/")
 async def health_check():
     return "Health Check Succeed!"
@@ -70,7 +53,7 @@ async def health_check():
 @app.get("/test")
 async def test_endpoint(request: Request):
     print(request)
-    return "Hello fuckers!"
+    return "Hello Test!"
 
 
 @app.get("/home")
