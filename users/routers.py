@@ -54,7 +54,9 @@ async def get_social_login_redirect_url(
 
 
 @user_router.get("/auth/callback", response_model=SocialLoginCallbackResponse)
-async def social_auth_callback(platform: str, code: str) -> SocialLoginCallbackResponse:
+async def social_auth_callback(
+    platform: SocialAuthPlatform, code: str
+) -> SocialLoginCallbackResponse:
     if platform == AUTH_PLATFORM_GOOGLE:
         try:
             google_auth = GoogleAuth()
