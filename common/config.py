@@ -21,10 +21,10 @@ if APP_ENV != APP_ENV_TEST:
         "engine": "tortoise.backends.mysql",
         "credentials": {
             "host": getenv("DB_HOST", "localhost"),
-            "port": getenv("DB_PORT", "23306"),
+            "port": getenv("DB_PORT", "33306"),
             "user": getenv("DB_USER", "root"),
             "password": getenv("DB_PASSWORD", "password"),
-            "database": getenv("DB_NAME", "blue_rally_db"),
+            "database": getenv("DB_NAME", "db_name"),
         },
     }
 else:

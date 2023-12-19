@@ -44,9 +44,6 @@ app.add_middleware(AuthMiddleware)
 app.include_router(user_router)
 
 
-# Database Init
-
-
 @app.get("/")
 async def health_check():
     return "Health Check Succeed!"
@@ -55,7 +52,7 @@ async def health_check():
 @app.get("/test")
 async def test_endpoint(request: Request):
     print(request)
-    return "Hello fuckers!"
+    return "Hello Test!"
 
 
 @app.get("/home")
