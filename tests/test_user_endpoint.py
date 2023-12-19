@@ -1,18 +1,15 @@
-import pytest
-from httpx import AsyncClient
-from users.auth import GoogleAuth
-from urllib.parse import urlencode
-from starlette import status
-from unittest.mock import patch, AsyncMock
-from users.models import User, UserToken
 from datetime import datetime, timedelta
+from unittest.mock import patch, AsyncMock
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
+import pytest
+from httpx import AsyncClient
+from starlette import status
 
-@pytest.mark.asyncio
-async def test_create_test_endpoint(client):
-    response = await client.get("/test")
-    assert response.status_code == 200
+from common.dependencies import get_current_user
+from users.auth import GoogleAuth
+from users.models import User, UserToken
 
 
 @pytest.mark.asyncio
@@ -97,3 +94,36 @@ async def test_refresh_token_endpoint(client: AsyncClient):
         )
         is None
     )
+
+
+@pytest.mark.asyncio
+async def test_success_logout(client: AsyncClient):
+    user = await User.create(
+        id=3,
+        email="fakeemail2@gmail.com",
+        sns_id="some_sns_id",
+        name="Test User",
+        profile_image="path/to/image",
+    )
+    refresh_token = "test_refresh_token"
+    await UserToken.create(
+        user=user,
+        refresh_token=refresh_token,
+        token_type="Bearer",
+        expires_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # 테스트 실행
+    response = await client.post("/api/user/auth/logout")
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert await UserToken.get_or_none(user=user, is_active=True) is None
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()

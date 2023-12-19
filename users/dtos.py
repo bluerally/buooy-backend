@@ -5,10 +5,10 @@ from common.dtos import BaseResponse
 
 
 class UserInfo(BaseModel):
-    sns_id: str = ""
-    name: str = ""
-    email: str = ""
-    profile_image: str = ""
+    sns_id: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[str] = None
+    profile_image: Optional[str] = None
     # iss: Optional[str] = None
     # sub: Optional[str] = None
     # aud: Optional[str] = None
@@ -23,8 +23,8 @@ class UserInfo(BaseModel):
 
 class LoginResponseData(BaseModel):
     user_info: UserInfo
-    access_token: str
-    refresh_token: str
+    access_token: str = ""
+    refresh_token: str = ""
 
 
 class RedirectUrlInfo(BaseModel):

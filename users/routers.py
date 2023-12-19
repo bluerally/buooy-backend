@@ -1,8 +1,12 @@
-from typing import List
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status, Request
+from typing import List
 from zoneinfo import ZoneInfo
+
+from fastapi import APIRouter, HTTPException, status, Depends
+
+from common.choices import SocialAuthPlatform
 from common.constants import AUTH_PLATFORM_GOOGLE
+from common.dependencies import get_current_user
 from common.dtos import BaseResponse
 from users.auth import GoogleAuth
 from users.dtos import (
@@ -21,10 +25,7 @@ from users.models import (
     CertificateLevel_Pydantic,
     UserToken,
 )
-from common.choices import SocialAuthPlatform
 from users.utils import create_refresh_token, create_access_token
-from common.decorators import login_required
-
 
 user_router = APIRouter(
     prefix="/api/user",
@@ -135,9 +136,7 @@ async def refresh_token_endpoint(
 
 
 @user_router.post("/auth/logout", response_model=BaseResponse)
-@login_required
-async def logout(request: Request) -> BaseResponse:
-    user = request.state.user
+async def logout(user: User = Depends(get_current_user)) -> BaseResponse:
     # 사용자와 연관된 모든 리프레시 토큰을 비활성화
     await UserToken.filter(user=user, is_active=True).update(is_active=False)
 
