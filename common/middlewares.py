@@ -9,7 +9,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         token = request.headers.get("Authorization")
         request.state.user = None
-        if token:
+        if token and token.startswith("Bearer "):
             try:
                 payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
                 user_id = payload.get("sub")

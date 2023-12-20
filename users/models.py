@@ -119,6 +119,18 @@ class UserInterestedSport(BaseModel):
         return f"USER: {self.user} - SPORT: {self.sport}"
 
 
+class AdminUser(BaseModel):
+    username = fields.CharField(max_length=100, unique=True)
+    password = fields.CharField(max_length=255)
+    is_active = fields.BooleanField(default=True)
+
+    class Meta:
+        table = "admin_users"
+
+    def __str__(self):
+        return f"USER: {self.username}"
+
+
 # Pydantic Model Creator
 CertificateName_Pydantic = pydantic_model_creator(Certificate, name="certificate_name")
 CertificateLevel_Pydantic = pydantic_model_creator(

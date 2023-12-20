@@ -1,13 +1,17 @@
-import uvicorn
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
-from starlette.requests import Request
-from users.routers import user_router
-from common.config import TORTOISE_ORM
-from tortoise import Tortoise
-from common.middlewares import AuthMiddleware
 from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI, Depends
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from tortoise import Tortoise
+
+from common.config import TORTOISE_ORM
+from common.middlewares import AuthMiddleware
+from users.routers import user_router
+from common.dependencies import get_admin
 
 
 @asynccontextmanager
@@ -17,7 +21,7 @@ async def lifespan(application: FastAPI):
     await Tortoise.close_connections()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None)
 
 
 templates = Jinja2Templates(directory="templates")
@@ -43,6 +47,17 @@ app.add_middleware(AuthMiddleware)
 
 # router include
 app.include_router(user_router)
+
+
+# Swagger UI 권한 설정
+@app.get("/docs", include_in_schema=False)
+async def get_documentation(admin: str = Depends(get_admin)):
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi(admin: str = Depends(get_admin)):
+    return app.openapi()
 
 
 @app.get("/")
