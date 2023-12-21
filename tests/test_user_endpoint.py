@@ -69,6 +69,7 @@ async def test_social_auth_callback(mock_post, mock_verify, client: AsyncClient)
 
 @pytest.mark.asyncio
 async def test_refresh_token_endpoint(client: AsyncClient):
+    # 테스트 데이터 세팅
     user = await User.create(
         id=1,
         email="fakeemail@gmail.com",
@@ -83,17 +84,28 @@ async def test_refresh_token_endpoint(client: AsyncClient):
         token_type="Bearer",
         expires_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
     )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # API 호출
     response = await client.post(
         "/api/user/auth/token/refresh", json={"refresh_token": refresh_token}
     )
 
+    # 응답 검증
     assert response.status_code == status.HTTP_200_OK
     assert (
         await UserToken.get_or_none(
             user=user, refresh_token=refresh_token, is_active=True
         )
-        is None
+        is not None
     )
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -118,7 +130,7 @@ async def test_success_logout(client: AsyncClient):
 
     app.dependency_overrides[get_current_user] = lambda: user
 
-    # 테스트 실행
+    # API 호출
     response = await client.post("/api/user/auth/logout")
 
     # 응답 검증

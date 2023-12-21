@@ -1,6 +1,4 @@
-from datetime import datetime
 from typing import List
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
@@ -25,7 +23,11 @@ from users.models import (
     CertificateLevel_Pydantic,
     UserToken,
 )
-from users.utils import create_refresh_token, create_access_token
+from users.utils import (
+    create_refresh_token,
+    create_access_token,
+    is_active_refresh_token,
+)
 
 user_router = APIRouter(
     prefix="/api/user",
@@ -101,36 +103,27 @@ async def social_auth_callback(
 
 @user_router.post("/auth/token/refresh", response_model=SocialLoginCallbackResponse)
 async def refresh_token_endpoint(
-    body: RefreshTokenRequest
+    body: RefreshTokenRequest, user: User = Depends(get_current_user)
 ) -> SocialLoginCallbackResponse:
     refresh_token = body.refresh_token
-    user_token = await UserToken.get_or_none(
-        refresh_token=refresh_token,
-        is_active=True,
-        expires_at__gte=datetime.now(ZoneInfo("UTC")),
-    ).prefetch_related("user")
 
-    if not user_token or not user_token.user:
+    is_token_active = await is_active_refresh_token(
+        user=user, refresh_token=refresh_token
+    )
+    if not is_token_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or inactive token"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or inactive token"
         )
 
     # 새로운 Access 토큰 생성
-    access_token = create_access_token(data={"user_id": user_token.user.id})
-    # 새로운 Refresh 토큰 생성 및 저장
-    new_refresh_token = await create_refresh_token(user_token.user)
-
-    # 이전 리프레시 토큰 비활성화
-    user_token.is_active = False
-    await user_token.save()
+    access_token = create_access_token(data={"user_id": user.id})
 
     return SocialLoginCallbackResponse(
         status_code=status.HTTP_200_OK,
         message="Token refreshed successfully",
         data=LoginResponseData(
-            user_info=UserInfo(**user_token.user.__dict__),
+            user_info=UserInfo(**user.__dict__),
             access_token=access_token,
-            refresh_token=new_refresh_token,
         ),
     )
 
