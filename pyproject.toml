@@ -24,6 +24,7 @@ asyncpg = "^0.29.0"
 pyjwt = "^2.8.0"
 aiomysql = "^0.2.0"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
+bcrypt = "^4.1.2"
 
 
 [tool.poetry.group.dev.dependencies]
