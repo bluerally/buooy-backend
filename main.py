@@ -11,6 +11,7 @@ from tortoise import Tortoise
 from common.config import TORTOISE_ORM
 from common.middlewares import AuthMiddleware
 from users.routers import user_router
+from parties.routers import party_router
 from common.dependencies import get_admin
 
 
@@ -47,6 +48,7 @@ app.add_middleware(AuthMiddleware)
 
 # router include
 app.include_router(user_router)
+app.include_router(party_router)
 
 
 # Swagger UI 권한 설정

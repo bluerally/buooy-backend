@@ -14,6 +14,7 @@ APP_ENV_TEST = "test"
 APP_ENV = getenv("APP_ENV", APP_ENV_LOCAL)
 IS_PRODUCTION = APP_ENV == APP_ENV_PROD
 
+MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
 # if IS_PRODUCTION:
 if APP_ENV != APP_ENV_TEST:
@@ -37,14 +38,16 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["users.models", "aerich.models"],
+            "models": MODELS_PATH,
             "default_connection": "default",
         }
     },
 }
 
 
-async def init():
+async def db_init() -> None:
     await Tortoise.init(
-        db_url=SQLITE_DB_URL, modules={"models": ["users.models", "aerich.models"]}
+        config=TORTOISE_ORM,
+        timezone="Asia/Seoul",
+        modules={"models": ["users.models", "aerich.models", "parties.models"]},
     )

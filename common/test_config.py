@@ -1,6 +1,7 @@
 from typing import List
 
 from tortoise import Tortoise
+from common.config import MODELS_PATH
 
 
 async def db_init(
@@ -9,7 +10,7 @@ async def db_init(
     generate_schema: bool = True,
 ):
     if models_path is None:
-        models_path = ["users.models"]
+        models_path = MODELS_PATH
 
     await Tortoise.init(db_url=database_url, modules={"models": models_path})
 
