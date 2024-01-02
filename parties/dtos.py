@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from parties.models import ParticipationStatus
 
 
 class PartyCreateRequest(BaseModel):
@@ -15,3 +16,7 @@ class PartyCreateRequest(BaseModel):
     participant_limit: int = 2
     participant_cost: int = 0
     sport_id: int = 1
+
+
+class RefreshTokenRequest(BaseModel):
+    new_status: ParticipationStatus = None

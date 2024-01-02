@@ -102,7 +102,7 @@ async def social_auth_callback(
 
 
 @user_router.post("/auth/token/refresh", response_model=SocialLoginCallbackResponse)
-async def refresh_token_endpoint(
+async def access_token_refresh(
     body: RefreshTokenRequest, user: User = Depends(get_current_user)
 ) -> SocialLoginCallbackResponse:
     refresh_token = body.refresh_token

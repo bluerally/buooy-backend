@@ -5,6 +5,9 @@ from common.utils import convert_string_to_datetime
 from parties.models import Party
 from parties.dtos import PartyCreateRequest
 from users.models import User
+from parties.services import PartyParticipateService
+from fastapi import HTTPException
+from parties.dtos import RefreshTokenRequest
 
 party_router = APIRouter(
     prefix="/api/party",
@@ -37,3 +40,62 @@ async def create_party(
         message="Party created successfully",
         data={"party_id": party.id},
     )
+
+
+@party_router.post("/{party_id}/participate", response_model=BaseResponse)
+async def participate_in_party(party_id: int, user: User = Depends(get_current_user)):
+    service = await PartyParticipateService.create(party_id, user)
+    try:
+        await service.participate()
+        return BaseResponse(
+            status_code=status.HTTP_200_OK,
+            message="Participation requested successfully.",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@party_router.post(
+    "/participants/{party_id}/status-change", response_model=BaseResponse
+)
+async def participant_change_participation_status(
+    party_id: int, body: RefreshTokenRequest, user: User = Depends(get_current_user)
+):
+    new_status = body.new_status
+    service = await PartyParticipateService.create(party_id, user)
+    try:
+        changed_participation = await service.participant_change_participation_status(
+            new_status
+        )
+        return BaseResponse(
+            status_code=status.HTTP_200_OK,
+            data={"participation_id": changed_participation.id},
+            message="Participation status changed successfully.",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@party_router.post(
+    "/organizer/{party_id}/status-change/{participation_id}",
+    response_model=BaseResponse,
+)
+async def organizer_change_participation_status(
+    party_id: int,
+    participation_id: int,
+    body: RefreshTokenRequest,
+    user: User = Depends(get_current_user),
+):
+    new_status = body.new_status
+    service = await PartyParticipateService.create(party_id, user)
+    try:
+        changed_participation = await service.organizer_change_participation_status(
+            participation_id, new_status
+        )
+        return BaseResponse(
+            status_code=status.HTTP_200_OK,
+            data={"participation_id": changed_participation.id},
+            message="Participation status changed successfully.",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

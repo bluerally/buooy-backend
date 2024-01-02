@@ -1,5 +1,5 @@
 from tortoise import fields
-
+from enum import IntEnum
 from common.models import BaseModel
 
 
@@ -35,15 +35,24 @@ class Party(BaseModel):
         return f"{self.id} - {self.title}"
 
 
+class ParticipationStatus(IntEnum):
+    PENDING = 0
+    APPROVED = 1
+    REJECTED = 2
+    CANCELLED = 3
+
+
 class PartyParticipant(BaseModel):
     participant_user = fields.ForeignKeyField(
         "models.User", null=True, on_delete=fields.SET_NULL
     )
     party = fields.ForeignKeyField("models.Party", null=True, on_delete=fields.SET_NULL)
-    is_active = fields.BooleanField(null=True, default=True)
+    status = fields.IntEnumField(
+        ParticipationStatus, default=ParticipationStatus.PENDING
+    )
 
     class Meta:
         table = "party_participants"
 
     def __str__(self):
-        return f"{self.id} - {self.party} - {self.participant_user}"
+        return f"{self.id} - {self.party} - {self.participant_user} - {self.status}"
