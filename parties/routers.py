@@ -7,7 +7,9 @@ from parties.dtos import PartyCreateRequest
 from users.models import User
 from parties.services import PartyParticipateService
 from fastapi import HTTPException
-from parties.dtos import RefreshTokenRequest
+from parties.dtos import RefreshTokenRequest, PartyDetailResponse
+from parties.services import PartyDetailService
+
 
 party_router = APIRouter(
     prefix="/api/party",
@@ -17,7 +19,7 @@ party_router = APIRouter(
 @party_router.post("/", response_model=BaseResponse)
 async def create_party(
     request_data: PartyCreateRequest, user: User = Depends(get_current_user)
-):
+) -> BaseResponse:
     party = await Party.create(
         title=request_data.title,
         body=request_data.body,
@@ -43,7 +45,9 @@ async def create_party(
 
 
 @party_router.post("/{party_id}/participate", response_model=BaseResponse)
-async def participate_in_party(party_id: int, user: User = Depends(get_current_user)):
+async def participate_in_party(
+    party_id: int, user: User = Depends(get_current_user)
+) -> BaseResponse:
     service = await PartyParticipateService.create(party_id, user)
     try:
         await service.participate()
@@ -60,7 +64,7 @@ async def participate_in_party(party_id: int, user: User = Depends(get_current_u
 )
 async def participant_change_participation_status(
     party_id: int, body: RefreshTokenRequest, user: User = Depends(get_current_user)
-):
+) -> BaseResponse:
     new_status = body.new_status
     service = await PartyParticipateService.create(party_id, user)
     try:
@@ -85,7 +89,7 @@ async def organizer_change_participation_status(
     participation_id: int,
     body: RefreshTokenRequest,
     user: User = Depends(get_current_user),
-):
+) -> BaseResponse:
     new_status = body.new_status
     service = await PartyParticipateService.create(party_id, user)
     try:
@@ -99,3 +103,12 @@ async def organizer_change_participation_status(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@party_router.get("/details/{party_id}", response_model=PartyDetailResponse)
+async def get_party_details(
+    party_id: int, user: User = Depends(get_current_user)
+) -> PartyDetailResponse:
+    service = await PartyDetailService.create(party_id)
+    response = await service.get_party_details(user)
+    return response

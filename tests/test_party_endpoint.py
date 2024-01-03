@@ -8,7 +8,7 @@ from parties.models import Party, PartyParticipant, ParticipationStatus
 
 
 @pytest.mark.asyncio
-async def test_success_party_create(client: AsyncClient):
+async def test_success_party_create(client: AsyncClient) -> None:
     user = await User.create(
         email="partyorg6@gmail.com",
         sns_id="some_sns_id",
@@ -48,7 +48,7 @@ async def test_success_party_create(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_success_party_participate(client: AsyncClient):
+async def test_success_party_participate(client: AsyncClient) -> None:
     organizer_user = await User.create(name="Organizer User")
     test_party = await Party.create(
         title="Test Party",
@@ -77,7 +77,7 @@ async def test_success_party_participate(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_organizer_accepts_participation(client: AsyncClient):
+async def test_organizer_accepts_participation(client: AsyncClient) -> None:
     organizer_user = await User.create(name="Organizer User")
     participant_user = await User.create(name="Participant User")
     test_party = await Party.create(title="Test Party", organizer_user=organizer_user)
@@ -104,7 +104,7 @@ async def test_organizer_accepts_participation(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_success_participant_cancel_participation(client: AsyncClient):
+async def test_success_participant_cancel_participation(client: AsyncClient) -> None:
     organizer_user = await User.create(name="Organizer User")
     participant_user = await User.create(name="Participant User")
     test_party = await Party.create(title="Test Party", organizer_user=organizer_user)
@@ -129,3 +129,82 @@ async def test_success_participant_cancel_participation(client: AsyncClient):
     changed_participation = await PartyParticipant.get_or_none(id=participation.id)
     assert changed_participation is not None
     assert changed_participation.status == ParticipationStatus.CANCELLED
+
+
+@pytest.mark.asyncio
+async def test_get_party_details_success(client: AsyncClient) -> None:
+    # 더미 데이터 생성
+    organizer_user = await User.create(
+        name="Organizer User", profile_image="http://example.com/image.jpg"
+    )
+    test_party = await Party.create(
+        title="Test Party",
+        body="Test Party body",
+        organizer_user=organizer_user,
+        gather_at=datetime.now(UTC) + timedelta(days=1),
+        due_at=datetime.now(UTC) + timedelta(days=2),
+        participant_limit=10,
+        participant_cost=100,
+        sport=await Sport.create(name="Freediving"),
+    )
+    approved_participant_user_1 = await User.create(
+        name="Participated User 1", profile_image="http://example.com/image2.jpg"
+    )
+    approved_participant_user_2 = await User.create(
+        name="Participated User 2", profile_image="http://example.com/image3.jpg"
+    )
+    approved_participant_user_3 = await User.create(
+        name="Participated User 3", profile_image="http://example.com/image4.jpg"
+    )
+
+    pending_participant_user_1 = await User.create(
+        name="Pending Participant User 1", profile_image="http://example.com/image5.jpg"
+    )
+    pending_participant_user_2 = await User.create(
+        name="Pending Participant User 2", profile_image="http://example.com/image6.jpg"
+    )
+    await PartyParticipant.create(
+        party=test_party,
+        participant_user=approved_participant_user_1,
+        status=ParticipationStatus.APPROVED,
+    )
+    await PartyParticipant.create(
+        party=test_party,
+        participant_user=approved_participant_user_2,
+        status=ParticipationStatus.APPROVED,
+    )
+    await PartyParticipant.create(
+        party=test_party,
+        participant_user=approved_participant_user_3,
+        status=ParticipationStatus.APPROVED,
+    )
+    await PartyParticipant.create(
+        party=test_party,
+        participant_user=pending_participant_user_1,
+        status=ParticipationStatus.PENDING,
+    )
+    await PartyParticipant.create(
+        party=test_party,
+        participant_user=pending_participant_user_2,
+        status=ParticipationStatus.PENDING,
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: organizer_user
+
+    # API 호출
+    response = await client.get(f"/api/party/details/{test_party.id}")
+    response_data = response.json()
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert response_data["sport_name"] == "Freediving"
+    assert response_data["participants_info"] == "3/10"
+    assert response_data["organizer_profile"]["name"] == "Organizer User"
+    assert len(response_data["approved_participants"]) == 3
+    assert len(response_data["pending_participants"]) == 2
+
+    # 의존성 오버라이드 초기화
+    app.dependency_overrides.clear()

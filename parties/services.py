@@ -1,6 +1,13 @@
 from parties.models import Party, PartyParticipant, ParticipationStatus
 from users.models import User
 from datetime import datetime, UTC
+from parties.dtos import PartyDetailResponse
+from users.dtos import UserSimpleProfile
+from common.constants import (
+    FORMAT_YYYY_d_MM_d_DD__HH_MM,
+    FORMAT_YYYY_d_MM_d_DD,
+    FORMAT_HH_MM,
+)
 
 
 class PartyParticipateService:
@@ -9,10 +16,12 @@ class PartyParticipateService:
         self.user = user
 
     @classmethod
-    async def create(cls, party_id: int, user: User):
+    async def create(cls, party_id: int, user: User) -> "PartyParticipateService":
         party = await Party.get_or_none(id=party_id)
         if party is None:
             raise ValueError("Party Does Not Exist")
+        if not party.is_active:
+            raise ValueError("Party is not Active")
         return cls(party, user)
 
     async def participate(self) -> None:
@@ -83,3 +92,73 @@ class PartyParticipateService:
         else:
             raise ValueError("Participants can only cancel their own participation.")
         return participation
+
+
+class PartyDetailService:
+    """파티 상세 정보 service"""
+
+    def __init__(self, party: Party) -> None:
+        self.party = party
+
+    @classmethod
+    async def create(cls, party_id: int) -> "PartyDetailService":
+        party = (
+            await Party.get_or_none(id=party_id)
+            .select_related("sport", "organizer_user")
+            .prefetch_related("participants")
+        )
+        if party is None:
+            raise ValueError("Party Does Not Exist")
+        return cls(party)
+
+    async def get_party_details(self, user: User) -> PartyDetailResponse:
+        # 필요한 데이터를 가져와서 파싱합니다.
+        participants = (
+            await PartyParticipant.filter(party=self.party)
+            .select_related("participant_user")
+            .all()
+        )
+
+        approved_participants = [
+            UserSimpleProfile(
+                profile_picture=p.participant_user.profile_image,
+                name=p.participant_user.name,
+                user_id=p.participant_user_id,
+            )
+            for p in participants
+            if p.status == ParticipationStatus.APPROVED
+        ]
+
+        pending_participants = [
+            UserSimpleProfile(
+                profile_picture=p.participant_user.profile_image,
+                name=p.participant_user.name,
+                user_id=p.participant_user_id,
+                # application_date=p.created_at.strftime(FORMAT_YYYY_d_MM_d_DD)
+            )
+            for p in participants
+            if p.status == ParticipationStatus.PENDING
+        ]
+
+        participants_info = (
+            f"{len(approved_participants)}/{self.party.participant_limit}"
+        )
+
+        return PartyDetailResponse(
+            sport_name=self.party.sport.name,
+            gather_date=self.party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
+            gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
+            participants_info=participants_info,
+            due_date=self.party.due_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            price=self.party.participant_cost,
+            body=self.party.body,
+            organizer_profile=UserSimpleProfile(
+                profile_picture=self.party.organizer_user.profile_image,
+                name=self.party.organizer_user.name,
+                user_id=self.party.organizer_user_id,
+            ),
+            posted_date=self.party.created_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            is_user_organizer=user.id == self.party.organizer_user_id,
+            pending_participants=pending_participants,
+            approved_participants=approved_participants,
+        )

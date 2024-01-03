@@ -21,6 +21,12 @@ class UserInfo(BaseModel):
     # family_name: Optional[str] = None
 
 
+class UserSimpleProfile(BaseModel):
+    user_id: int
+    profile_picture: str
+    name: str
+
+
 class LoginResponseData(BaseModel):
     user_info: UserInfo
     access_token: str = ""
