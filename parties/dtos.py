@@ -24,6 +24,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 class PartyDetailResponse(BaseModel):
+    title: str
     sport_name: str
     gather_date: str
     gather_time: str

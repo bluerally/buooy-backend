@@ -146,6 +146,7 @@ class PartyDetailService:
 
         return PartyDetailResponse(
             sport_name=self.party.sport.name,
+            title=self.party.title,
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=participants_info,
