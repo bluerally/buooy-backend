@@ -6,6 +6,7 @@ import httpx
 from fastapi import HTTPException, status
 from google.auth.transport import requests
 from google.oauth2 import id_token
+from typing import Any
 
 
 class SocialLogin(ABC):
@@ -14,7 +15,7 @@ class SocialLogin(ABC):
         pass
 
     @abstractmethod
-    async def get_user_data(self, code: str):
+    async def get_user_data(self, code: str) -> Any:
         pass
 
 
@@ -23,10 +24,10 @@ class GoogleAuth(SocialLogin):
     TOKEN_URL = "https://oauth2.googleapis.com/token"
     CLIENT_ID = getenv("GOOGLE_CLIENT_ID")
     CLIENT_SECRET = getenv("GOOGLE_CLIENT_SECRET")
-    REDIRECT_URI = "http://localhost:8000/auth/callback/google"
+    REDIRECT_URI = "http://localhost:3000/login/auth"  # TODO 환경 변수화 필요
 
     @staticmethod
-    async def get_google_user_info(token: str):
+    async def get_google_user_info(token: str) -> Any:
         try:
             id_info = id_token.verify_oauth2_token(
                 token, requests.Request(), GoogleAuth.CLIENT_ID
@@ -47,7 +48,7 @@ class GoogleAuth(SocialLogin):
         }
         return f"{self.AUTHORIZATION_URL}?{urlencode(query_params)}"
 
-    async def get_user_data(self, code: str):
+    async def get_user_data(self, code: str) -> Any:
         data = {
             "code": code,
             "client_id": self.CLIENT_ID,
@@ -82,7 +83,7 @@ class GoogleAuth(SocialLogin):
                     status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
                 )
 
-    async def refresh_access_token(self, refresh_token: str):
+    async def refresh_access_token(self, refresh_token: str) -> Any:
         data = {
             "client_id": self.CLIENT_ID,
             "client_secret": self.CLIENT_SECRET,
@@ -100,16 +101,16 @@ class GoogleAuth(SocialLogin):
 
 
 class KakaoAuth(SocialLogin):
-    async def get_login_redirect_url(self):
-        pass
+    async def get_login_redirect_url(self) -> str:
+        return ""
 
-    async def get_user_data(self, code: str):
-        pass
+    async def get_user_data(self, code: str) -> Any:
+        return ""
 
 
 class NaverAuth(SocialLogin):
-    async def get_login_redirect_url(self):
-        pass
+    async def get_login_redirect_url(self) -> str:
+        return ""
 
-    async def get_user_data(self, code: str):
-        pass
+    async def get_user_data(self, code: str) -> Any:
+        return ""
