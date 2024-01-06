@@ -158,7 +158,9 @@ class PartyDetailService:
                 user_id=self.party.organizer_user_id,
             ),
             posted_date=self.party.created_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
-            is_user_organizer=user.id == self.party.organizer_user_id,
+            is_user_organizer=user.id == self.party.organizer_user_id
+            if user
+            else False,
             pending_participants=pending_participants,
             approved_participants=approved_participants,
         )

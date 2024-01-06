@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Request
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
 from common.utils import convert_string_to_datetime
@@ -106,9 +106,8 @@ async def organizer_change_participation_status(
 
 
 @party_router.get("/details/{party_id}", response_model=PartyDetailResponse)
-async def get_party_details(
-    party_id: int, user: User = Depends(get_current_user)
-) -> PartyDetailResponse:
+async def get_party_details(party_id: int, request: Request) -> PartyDetailResponse:
+    user = request.state.user
     service = await PartyDetailService.create(party_id)
     response = await service.get_party_details(user)
     return response
