@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from parties.models import ParticipationStatus
 from users.dtos import UserSimpleProfile
+from common.dtos import BaseResponse
 
 
 class PartyCreateRequest(BaseModel):
@@ -23,7 +24,7 @@ class RefreshTokenRequest(BaseModel):
     new_status: ParticipationStatus
 
 
-class PartyDetailResponse(BaseModel):
+class PartyInfo(BaseModel):
     title: str
     sport_name: str
     gather_date: str
@@ -34,6 +35,25 @@ class PartyDetailResponse(BaseModel):
     body: str
     organizer_profile: UserSimpleProfile
     posted_date: str
-    is_user_organizer: bool
-    pending_participants: Optional[List[UserSimpleProfile]] = None
-    approved_participants: Optional[List[UserSimpleProfile]] = None
+
+
+class ParticipantProfile(UserSimpleProfile):
+    participation_id: int
+
+
+class PartyListDetail(PartyInfo):
+    is_user_organizer: bool = False
+
+
+class PartyDetail(PartyInfo):
+    is_user_organizer: bool = False
+    pending_participants: Optional[List[ParticipantProfile]] = None
+    approved_participants: Optional[List[ParticipantProfile]] = None
+
+
+class PartyDetailResponse(BaseResponse):
+    data: PartyDetail
+
+
+class PartyListResponse(BaseResponse):
+    data: List[PartyListDetail]

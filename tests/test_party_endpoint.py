@@ -197,14 +197,67 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
     # API 호출
     response = await client.get(f"/api/party/details/{test_party.id}")
     response_data = response.json()
+    data = response_data["data"]
+    # 응답 검증
+    assert response.status_code == 200
+    assert data["sport_name"] == "Freediving"
+    assert data["participants_info"] == "3/10"
+    assert data["organizer_profile"]["name"] == "Organizer User"
+    assert len(data["approved_participants"]) == 3
+    assert len(data["pending_participants"]) == 2
+
+    # 의존성 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_party_list_success(client: AsyncClient) -> None:
+    # 더미 데이터 생성
+    organizer_user_1 = await User.create(
+        name="Organizer User 1", profile_image="http://example.com/image1.jpg"
+    )
+    organizer_user_2 = await User.create(
+        name="Organizer User 2", profile_image="http://example.com/image2.jpg"
+    )
+    sport_1 = await Sport.create(name="Freediving")
+    sport_2 = await Sport.create(name="Scuba Diving")
+
+    await Party.create(
+        title="Freediving Party",
+        body="Freediving Party body",
+        organizer_user=organizer_user_1,
+        gather_at=datetime.now(UTC) + timedelta(days=3),
+        due_at=datetime.now(UTC) + timedelta(days=4),
+        participant_limit=5,
+        participant_cost=200,
+        sport=sport_1,
+    )
+    await Party.create(
+        title="Scuba Diving Party",
+        body="Scuba Diving Party body",
+        organizer_user=organizer_user_2,
+        gather_at=datetime.now(UTC) + timedelta(days=5),
+        due_at=datetime.now(UTC) + timedelta(days=6),
+        participant_limit=6,
+        participant_cost=300,
+        sport=sport_2,
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: organizer_user_1
+
+    # API 호출
+    response = await client.get("/api/party/list")
+    response_data = response.json()
+    parties = response_data["data"]
 
     # 응답 검증
     assert response.status_code == 200
-    assert response_data["sport_name"] == "Freediving"
-    assert response_data["participants_info"] == "3/10"
-    assert response_data["organizer_profile"]["name"] == "Organizer User"
-    assert len(response_data["approved_participants"]) == 3
-    assert len(response_data["pending_participants"]) == 2
+    assert len(parties) >= 2
+    assert any(party["title"] == "Freediving Party" for party in parties)
+    assert any(party["title"] == "Scuba Diving Party" for party in parties)
 
     # 의존성 오버라이드 초기화
     app.dependency_overrides.clear()

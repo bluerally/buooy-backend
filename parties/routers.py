@@ -7,8 +7,9 @@ from parties.dtos import PartyCreateRequest
 from users.models import User
 from parties.services import PartyParticipateService
 from fastapi import HTTPException
-from parties.dtos import RefreshTokenRequest, PartyDetailResponse
-from parties.services import PartyDetailService
+from parties.dtos import RefreshTokenRequest, PartyListResponse, PartyDetailResponse
+from parties.services import PartyDetailService, PartyListService
+from typing import Optional
 
 
 party_router = APIRouter(
@@ -109,5 +110,34 @@ async def organizer_change_participation_status(
 async def get_party_details(party_id: int, request: Request) -> PartyDetailResponse:
     user = request.state.user
     service = await PartyDetailService.create(party_id)
-    response = await service.get_party_details(user)
-    return response
+    party_details = await service.get_party_details(user)
+    return PartyDetailResponse(
+        status_code=status.HTTP_200_OK,
+        data=party_details,
+        message="Party details successfully retrieved.",
+    )
+
+
+@party_router.get("/list", response_model=PartyListResponse)
+async def get_party_list(
+    request: Request,
+    sport_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    gather_date_min: Optional[str] = None,
+    gather_date_max: Optional[str] = None,
+    search_query: Optional[str] = None,
+) -> PartyListResponse:
+    user = request.state.user
+    service = PartyListService(user)
+    party_list = await service.get_party_list(
+        sport_id=sport_id,
+        is_active=is_active,
+        gather_date_min=gather_date_min,
+        gather_date_max=gather_date_max,
+        search_query=search_query,
+    )
+    return PartyListResponse(
+        status_code=status.HTTP_200_OK,
+        data=party_list,
+        message="Party list successfully retrieved.",
+    )

@@ -1,13 +1,15 @@
 from parties.models import Party, PartyParticipant, ParticipationStatus
 from users.models import User
 from datetime import datetime, UTC
-from parties.dtos import PartyDetailResponse
+from parties.dtos import ParticipantProfile, PartyDetail, PartyListDetail
 from users.dtos import UserSimpleProfile
 from common.constants import (
     FORMAT_YYYY_d_MM_d_DD__HH_MM,
     FORMAT_YYYY_d_MM_d_DD,
     FORMAT_HH_MM,
 )
+from typing import List, Optional
+from tortoise.expressions import Q
 
 
 class PartyParticipateService:
@@ -111,7 +113,7 @@ class PartyDetailService:
             raise ValueError("Party Does Not Exist")
         return cls(party)
 
-    async def get_party_details(self, user: User) -> PartyDetailResponse:
+    async def get_party_details(self, user: User) -> PartyDetail:
         # 필요한 데이터를 가져와서 파싱합니다.
         participants = (
             await PartyParticipant.filter(party=self.party)
@@ -120,20 +122,22 @@ class PartyDetailService:
         )
 
         approved_participants = [
-            UserSimpleProfile(
+            ParticipantProfile(
                 profile_picture=p.participant_user.profile_image,
                 name=p.participant_user.name,
                 user_id=p.participant_user_id,
+                participation_id=p.id,
             )
             for p in participants
             if p.status == ParticipationStatus.APPROVED
         ]
 
         pending_participants = [
-            UserSimpleProfile(
+            ParticipantProfile(
                 profile_picture=p.participant_user.profile_image,
                 name=p.participant_user.name,
                 user_id=p.participant_user_id,
+                participation_id=p.id,
                 # application_date=p.created_at.strftime(FORMAT_YYYY_d_MM_d_DD)
             )
             for p in participants
@@ -144,7 +148,7 @@ class PartyDetailService:
             f"{len(approved_participants)}/{self.party.participant_limit}"
         )
 
-        return PartyDetailResponse(
+        return PartyDetail(
             sport_name=self.party.sport.name,
             title=self.party.title,
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
@@ -164,4 +168,81 @@ class PartyDetailService:
             else False,
             pending_participants=pending_participants,
             approved_participants=approved_participants,
+        )
+
+
+class PartyListService:
+    def __init__(self, user: Optional[User] = None) -> None:
+        self.user = user
+
+    async def get_party_list(
+        self,
+        sport_id: Optional[int] = None,
+        is_active: Optional[bool] = None,
+        gather_date_min: Optional[str] = None,
+        gather_date_max: Optional[str] = None,
+        search_query: Optional[str] = None,
+    ) -> List[PartyListDetail]:
+        # sport_id = kwargs.get("sport_id")
+        # is_active = kwargs.get("is_active")
+        # gather_date_min = kwargs.get("gather_date_min")
+        # gather_date_max = kwargs.get("gather_date_max")
+        # search_query = kwargs.get("search_query")
+
+        query = Q()
+
+        if sport_id is not None:
+            query &= Q(sport_id=sport_id)
+
+        if is_active:
+            query &= Q(is_active=True)
+
+        if gather_date_min:
+            query &= Q(
+                gather_at__gte=datetime.strptime(gather_date_min, FORMAT_YYYY_d_MM_d_DD)
+            )
+
+        if gather_date_max:
+            query &= Q(
+                gather_at__lte=datetime.strptime(gather_date_max, FORMAT_YYYY_d_MM_d_DD)
+            )
+
+        if search_query:
+            # TODO 쿼리 개선 필요
+            query &= Q(title__icontains=search_query) | Q(
+                place_name__icontains=search_query
+            )
+            # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
+
+        parties = (
+            await Party.filter(query)
+            .select_related("sport", "organizer_user")
+            .prefetch_related("participants")
+        )
+
+        return [await self._build_party_response(party) for party in parties]
+
+    async def _build_party_response(self, party: Party) -> PartyListDetail:
+        approved_participants = await PartyParticipant.filter(
+            party=party, status=ParticipationStatus.APPROVED
+        ).count()
+
+        return PartyListDetail(
+            sport_name=party.sport.name,
+            title=party.title,
+            gather_date=party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
+            gather_time=party.gather_at.strftime(FORMAT_HH_MM),
+            participants_info=f"{approved_participants}/{party.participant_limit}",
+            due_date=party.due_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            price=party.participant_cost,
+            body=party.body,
+            organizer_profile=UserSimpleProfile(
+                profile_picture=party.organizer_user.profile_image,
+                name=party.organizer_user.name,
+                user_id=party.organizer_user_id,
+            ),
+            posted_date=party.created_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            is_user_organizer=self.user.id == party.organizer_user_id
+            if self.user
+            else False,
         )
