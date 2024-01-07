@@ -10,6 +10,7 @@ from common.constants import (
 )
 from typing import List, Optional
 from tortoise.expressions import Q
+from fastapi import HTTPException, status
 
 
 class PartyParticipateService:
@@ -183,50 +184,50 @@ class PartyListService:
         gather_date_max: Optional[str] = None,
         search_query: Optional[str] = None,
     ) -> List[PartyListDetail]:
-        # sport_id = kwargs.get("sport_id")
-        # is_active = kwargs.get("is_active")
-        # gather_date_min = kwargs.get("gather_date_min")
-        # gather_date_max = kwargs.get("gather_date_max")
-        # search_query = kwargs.get("search_query")
+        try:
+            query = Q()
 
-        query = Q()
+            if sport_id is not None:
+                query &= Q(sport_id=sport_id)
 
-        if sport_id is not None:
-            query &= Q(sport_id=sport_id)
+            if is_active:
+                query &= Q(is_active=True)
 
-        if is_active:
-            query &= Q(is_active=True)
+            if gather_date_min:
+                query &= Q(
+                    gather_at__gte=datetime.strptime(
+                        gather_date_min, FORMAT_YYYY_d_MM_d_DD
+                    )
+                )
 
-        if gather_date_min:
-            query &= Q(
-                gather_at__gte=datetime.strptime(gather_date_min, FORMAT_YYYY_d_MM_d_DD)
+            if gather_date_max:
+                query &= Q(
+                    gather_at__lte=datetime.strptime(
+                        gather_date_max, FORMAT_YYYY_d_MM_d_DD
+                    )
+                )
+
+            if search_query:
+                # TODO 쿼리 개선 필요
+                query &= Q(title__icontains=search_query) | Q(
+                    place_name__icontains=search_query
+                )
+                # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
+
+            parties = (
+                await Party.filter(query)
+                .select_related("sport", "organizer_user")
+                .prefetch_related("participants")
             )
-
-        if gather_date_max:
-            query &= Q(
-                gather_at__lte=datetime.strptime(gather_date_max, FORMAT_YYYY_d_MM_d_DD)
-            )
-
-        if search_query:
-            # TODO 쿼리 개선 필요
-            query &= Q(title__icontains=search_query) | Q(
-                place_name__icontains=search_query
-            )
-            # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
-
-        parties = (
-            await Party.filter(query)
-            .select_related("sport", "organizer_user")
-            .prefetch_related("participants")
-        )
-
-        return [await self._build_party_response(party) for party in parties]
+            party_list = [await self._build_party_response(party) for party in parties]
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return party_list
 
     async def _build_party_response(self, party: Party) -> PartyListDetail:
         approved_participants = await PartyParticipant.filter(
             party=party, status=ParticipationStatus.APPROVED
         ).count()
-
         return PartyListDetail(
             sport_name=party.sport.name,
             title=party.title,

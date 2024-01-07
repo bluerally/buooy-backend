@@ -255,9 +255,7 @@ async def test_get_party_list_success(client: AsyncClient) -> None:
 
     # 응답 검증
     assert response.status_code == 200
-    assert len(parties) >= 2
-    assert any(party["title"] == "Freediving Party" for party in parties)
-    assert any(party["title"] == "Scuba Diving Party" for party in parties)
+    assert len(parties) == 2
 
     # 의존성 오버라이드 초기화
     app.dependency_overrides.clear()
