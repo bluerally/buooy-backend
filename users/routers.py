@@ -1,12 +1,12 @@
-from typing import List
-
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List, Optional
+import uuid
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 
 from common.choices import SocialAuthPlatform
-from common.constants import AUTH_PLATFORM_GOOGLE
+from common.constants import AUTH_PLATFORM_GOOGLE, AUTH_PLATFORM_KAKAO
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
-from users.auth import GoogleAuth
+from users.auth import GoogleAuth, KakaoAuth, SocialLogin
 from users.dtos import (
     SocialLoginCallbackResponse,
     UserInfo,
@@ -34,70 +34,90 @@ user_router = APIRouter(
 )
 
 
-@user_router.get("/auth/redirect", response_model=SocialLoginRedirectResponse)
+@user_router.get(
+    "/auth/redirect-url/{platform}", response_model=SocialLoginRedirectResponse
+)
 async def get_social_login_redirect_url(
-    platform: SocialAuthPlatform
+    request: Request,
+    platform: SocialAuthPlatform,
 ) -> SocialLoginRedirectResponse:
+    auth: SocialLogin
     if platform == AUTH_PLATFORM_GOOGLE:
-        google_auth = GoogleAuth()
-        redirect_url = await google_auth.get_login_redirect_url()
-        redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
-
-        return SocialLoginRedirectResponse(
-            status_code=status.HTTP_200_OK,
-            message="Google redirect URL fetched successfully",
-            data=redirect_url_info,
-        )
-
-    # Naver와 Kakao에 대한 처리를 여기에 추가
+        auth = GoogleAuth()
+    elif platform == AUTH_PLATFORM_KAKAO:
+        session_nonce = str(uuid.uuid4())
+        auth = KakaoAuth(session_nonce)  # no-sec
+        request.session["nonce"] = session_nonce
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
         )
 
+    redirect_url = await auth.get_login_redirect_url()
+    redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
 
-@user_router.get("/auth/callback", response_model=SocialLoginCallbackResponse)
+    return SocialLoginRedirectResponse(
+        status_code=status.HTTP_200_OK,
+        message="redirect URL fetched successfully",
+        data=redirect_url_info,
+    )
+
+
+@user_router.get("/auth/{platform}", response_model=SocialLoginCallbackResponse)
 async def social_auth_callback(
-    platform: SocialAuthPlatform, code: str
+    request: Request,
+    platform: SocialAuthPlatform,
+    code: str,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
 ) -> SocialLoginCallbackResponse:
+    auth: SocialLogin
     if platform == AUTH_PLATFORM_GOOGLE:
-        try:
-            google_auth = GoogleAuth()
-            user_info_dict = await google_auth.get_user_data(code)
-            # TODO 가공 로직 변경 필요
-            user_info = UserInfo(
-                sns_id=user_info_dict.get("sub"),
-                email=user_info_dict.get("email"),
-                name=user_info_dict.get("name"),
-                profile_image=user_info_dict.get("picture"),
+        auth = GoogleAuth()
+    elif platform == AUTH_PLATFORM_KAKAO:
+        if error is not None or error_description is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Kakao authorization Error, error: {error}, error_description: {error_description}",
             )
-
-            # 데이터베이스에서 사용자 찾기 또는 생성
-            user = await User.get_or_none(sns_id=user_info.sns_id)
-            if not user:
-                user = await User.create(**user_info_dict)
-
-            # Access, Refresh 토큰 생성 및 저장
-            access_token = create_access_token(data={"user_id": user.id})
-            refresh_token = await create_refresh_token(user)
-
-            return SocialLoginCallbackResponse(
-                status_code=status.HTTP_200_OK,
-                message="Login successful",
-                data=LoginResponseData(
-                    user_info=user_info,
-                    access_token=access_token,
-                    refresh_token=refresh_token,
-                ),
-            )
-        except HTTPException as e:
-            return SocialLoginCallbackResponse(
-                status_code=e.status_code, message=str(e.detail), data=None
-            )
-    # Naver와 Kakao 처리 추가 예정
+        session_nonce = request.session.get("nonce")
+        auth = KakaoAuth(session_nonce)  # no-sec
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
+        )
+
+    try:
+        user_info = await auth.get_user_data(code)
+        user = await User.get_or_none(sns_id=user_info.sns_id)
+        if not user:
+            user = await User.create(**user_info.__dict__)
+        else:
+            # 기존 사용자 정보 업데이트
+            if (
+                user.email != user_info.email
+                or user.profile_image != user_info.profile_image
+            ):
+                user.email = user_info.email
+                user.profile_image = user_info.profile_image
+                await user.save()
+
+        # Access, Refresh 토큰 생성 및 저장
+        access_token = create_access_token(data={"user_id": user.id})
+        refresh_token = await create_refresh_token(user)
+
+        return SocialLoginCallbackResponse(
+            status_code=status.HTTP_200_OK,
+            message="Login successful",
+            data=LoginResponseData(
+                user_info=user_info,
+                access_token=access_token,
+                refresh_token=refresh_token,
+            ),
+        )
+    except HTTPException as e:
+        return SocialLoginCallbackResponse(
+            status_code=e.status_code, message=str(e.detail), data=None
         )
 
 

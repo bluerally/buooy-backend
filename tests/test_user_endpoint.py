@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, Mock
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
@@ -13,10 +13,8 @@ from users.models import User, UserToken
 
 
 @pytest.mark.asyncio
-async def test_get_social_login_redirect_url(client: AsyncClient):
-    response = await client.get(
-        "/api/user/auth/redirect", params={"platform": "google"}
-    )
+async def test_get_social_login_redirect_url(client: AsyncClient) -> None:
+    response = await client.get("/api/user/auth/redirect-url/google")
     assert response.status_code == status.HTTP_200_OK
     query_params = {
         "client_id": GoogleAuth.CLIENT_ID,
@@ -50,7 +48,9 @@ MOCKED_GOOGLE_USER_INFO = {
 @patch("users.auth.id_token.verify_oauth2_token", return_value=MOCKED_GOOGLE_USER_INFO)
 @patch("httpx.AsyncClient.post")
 @pytest.mark.asyncio
-async def test_social_auth_callback(mock_post, mock_verify, client: AsyncClient):
+async def test_social_auth_google(
+    mock_post: AsyncMock, mock_verify: Mock, client: AsyncClient
+) -> None:
     mock_post.return_value.json = AsyncMock(
         return_value={
             "access_token": "mock_access_token",
@@ -60,15 +60,13 @@ async def test_social_auth_callback(mock_post, mock_verify, client: AsyncClient)
         }
     )
 
-    response = await client.get(
-        "/api/user/auth/callback", params={"platform": "google", "code": "testcode"}
-    )
+    response = await client.get("/api/user/auth/google", params={"code": "testcode"})
 
     assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
-async def test_refresh_token_endpoint(client: AsyncClient):
+async def test_refresh_token_endpoint(client: AsyncClient) -> None:
     # 테스트 데이터 세팅
     user = await User.create(
         id=1,
@@ -109,7 +107,7 @@ async def test_refresh_token_endpoint(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_success_logout(client: AsyncClient):
+async def test_success_logout(client: AsyncClient) -> None:
     user = await User.create(
         id=3,
         email="fakeemail2@gmail.com",

@@ -1,14 +1,21 @@
-import jwt
+import json
 import secrets
-from datetime import datetime, timedelta
-from typing import Optional, Dict
-from fastapi import HTTPException
+from datetime import datetime, UTC, timedelta
+from typing import Optional, Dict, Union, Any
 from zoneinfo import ZoneInfo
+
+import httpx
+from fastapi import HTTPException
+from jose import jwt, jwk
+from jose.utils import base64url_decode
+
 from common.config import SECRET_KEY, ALGORITHM
 from users.models import UserToken, User
 
 
-def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+) -> Any:
     to_encode = data.copy()
     _now = datetime.now(ZoneInfo("UTC"))
     if expires_delta:
@@ -20,15 +27,17 @@ def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def verify_access_token(token: str) -> Dict:
+def verify_access_token(token: str) -> Union[Dict[str, Any], None]:
     try:
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return decoded_token if decoded_token else None
-    except jwt.PyJWTError:
+    except jwt.JWTError:
         raise HTTPException(status_code=403, detail="Could not validate credentials")
 
 
-async def create_refresh_token(user: User, token_type="Bearer", expires_in_days=3):
+async def create_refresh_token(
+    user: User, token_type: str = "Bearer", expires_in_days: int = 3
+) -> Any:
     refresh_token = secrets.token_urlsafe(32)
     expires_at = datetime.now(ZoneInfo("UTC")) + timedelta(days=expires_in_days)
     await UserToken.create(
@@ -55,3 +64,49 @@ async def is_active_refresh_token(user: User, refresh_token: str) -> bool:
         await active_token_info.save()
         return False
     return True
+
+
+async def validate_kakao_id_token(
+    id_token: Union[str, None], client_id: Union[str, None], session_nonce: str
+) -> Dict[str, Any]:
+    decoded_id_token: Dict[str, Any] = {}
+    if not id_token or not client_id:
+        return decoded_id_token
+    header, payload, signature = id_token.split(".")
+
+    decoded_header = base64url_decode(header)
+    header_data = json.loads(decoded_header)
+
+    decoded_payload = base64url_decode(payload)
+    payload_data = json.loads(decoded_payload)
+
+    if payload_data.get("iss") != "https://kauth.kakao.com":
+        return decoded_id_token
+    if payload_data.get("aud") != client_id:
+        return decoded_id_token
+    if payload_data.get("exp") < datetime.now(UTC).timestamp():
+        return decoded_id_token
+    if payload_data.get("nonce") != session_nonce:
+        return decoded_id_token
+
+    async with httpx.AsyncClient() as client:
+        jwks_response = await client.get(
+            "https://kauth.kakao.com/.well-known/jwks.json"
+        )
+        jwks = jwks_response.json()
+
+    public_key = None
+    for jwk_key in jwks.get("keys", []):
+        if jwk_key.get("kid") == header_data.get("kid"):
+            public_key = jwk.construct(jwk_key)
+
+    if not public_key:
+        return decoded_id_token
+
+    try:
+        decoded_id_token = jwt.decode(
+            id_token, public_key, algorithms=["RS256"], audience=client_id
+        )
+        return decoded_id_token
+    except jwt.JWTError:
+        return decoded_id_token
