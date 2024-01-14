@@ -3,10 +3,14 @@ import uuid
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 
 from common.choices import SocialAuthPlatform
-from common.constants import AUTH_PLATFORM_GOOGLE, AUTH_PLATFORM_KAKAO
+from common.constants import (
+    AUTH_PLATFORM_GOOGLE,
+    AUTH_PLATFORM_KAKAO,
+    AUTH_PLATFORM_NAVER,
+)
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
-from users.auth import GoogleAuth, KakaoAuth, SocialLogin
+from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
 from users.dtos import (
     SocialLoginCallbackResponse,
     UserInfo,
@@ -46,8 +50,12 @@ async def get_social_login_redirect_url(
         auth = GoogleAuth()
     elif platform == AUTH_PLATFORM_KAKAO:
         session_nonce = str(uuid.uuid4())
-        auth = KakaoAuth(session_nonce)  # no-sec
+        auth = KakaoAuth(session_nonce)
         request.session["nonce"] = session_nonce
+    elif platform == AUTH_PLATFORM_NAVER:
+        session_state = str(uuid.uuid4())
+        auth = NaverAuth(session_state)
+        request.session["state"] = session_state
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
@@ -72,6 +80,7 @@ async def social_auth_callback(
     error_description: Optional[str] = None,
 ) -> SocialLoginCallbackResponse:
     auth: SocialLogin
+
     if platform == AUTH_PLATFORM_GOOGLE:
         auth = GoogleAuth()
     elif platform == AUTH_PLATFORM_KAKAO:
@@ -81,7 +90,15 @@ async def social_auth_callback(
                 detail=f"Kakao authorization Error, error: {error}, error_description: {error_description}",
             )
         session_nonce = request.session.get("nonce")
-        auth = KakaoAuth(session_nonce)  # no-sec
+        auth = KakaoAuth(session_nonce)
+    elif platform == AUTH_PLATFORM_NAVER:
+        if error is not None or error_description is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Kakao authorization Error, error: {error}, error_description: {error_description}",
+            )
+        session_state = request.session.get("state")
+        auth = NaverAuth(session_state)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"

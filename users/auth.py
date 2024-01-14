@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from os import getenv
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import urlencode
 
 import httpx
@@ -8,7 +8,11 @@ from fastapi import HTTPException, status
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
-from common.constants import AUTH_PLATFORM_GOOGLE, AUTH_PLATFORM_KAKAO
+from common.constants import (
+    AUTH_PLATFORM_GOOGLE,
+    AUTH_PLATFORM_KAKAO,
+    AUTH_PLATFORM_NAVER,
+)
 from users.dtos import UserInfo
 from users.utils import validate_kakao_id_token
 
@@ -20,12 +24,6 @@ class SocialLogin(ABC):
 
     @abstractmethod
     async def get_user_data(self, code: str) -> Any:
-        pass
-
-    @abstractmethod
-    async def _extract_user_info_from_payload(
-        self, payload: Dict[str, Any]
-    ) -> UserInfo:
         pass
 
 
@@ -61,16 +59,6 @@ class GoogleAuth(SocialLogin):
         }
         return f"{self.AUTHORIZATION_URL}?{urlencode(query_params)}"
 
-    async def _extract_user_info_from_payload(
-        self, payload: Dict[str, Any]
-    ) -> UserInfo:
-        return UserInfo(
-            sns_id=payload.get("sub"),
-            email=payload.get("email"),
-            name=payload.get("name"),
-            profile_image=payload.get("picture"),
-        )
-
     async def get_user_data(self, code: str) -> UserInfo:
         data = {
             "code": code,
@@ -100,7 +88,12 @@ class GoogleAuth(SocialLogin):
                     requests.Request(),
                     self.CLIENT_ID,
                 )
-                return await self._extract_user_info_from_payload(id_info)
+                return UserInfo(
+                    sns_id=id_info.get("sub"),
+                    email=id_info.get("email"),
+                    name=id_info.get("name"),
+                    profile_image=id_info.get("picture"),
+                )
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
@@ -147,16 +140,6 @@ class KakaoAuth(SocialLogin):
         }
         return f"{self.AUTHORIZATION_URL}?{urlencode(query_params)}"
 
-    async def _extract_user_info_from_payload(
-        self, payload: Dict[str, Any]
-    ) -> UserInfo:
-        return UserInfo(
-            sns_id=payload.get("sub"),
-            email=payload.get("email"),
-            name=payload.get("nickname"),
-            profile_image=payload.get("picture"),
-        )
-
     async def get_user_data(self, code: str) -> UserInfo:
         data = {
             "code": code,
@@ -191,7 +174,12 @@ class KakaoAuth(SocialLogin):
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid ID token",
                 )
-            return await self._extract_user_info_from_payload(decoded_id_token)
+            return UserInfo(
+                sns_id=decoded_id_token.get("sub"),
+                email=decoded_id_token.get("email"),
+                name=decoded_id_token.get("nickname"),
+                profile_image=decoded_id_token.get("picture"),
+            )
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
@@ -199,8 +187,76 @@ class KakaoAuth(SocialLogin):
 
 
 class NaverAuth(SocialLogin):
+    AUTHORIZATION_URL = "https://nid.naver.com/oauth2.0/authorize"
+    TOKEN_URL = "https://nid.naver.com/oauth2.0/token"
+    CLIENT_ID = getenv("NAVER_CLIENT_ID")
+    CLIENT_SECRET = getenv("NAVER_CLIENT_SECRET")
+    REDIRECT_URI = (
+        getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
+        + f"/{AUTH_PLATFORM_NAVER}"
+    )
+    USER_PROFILE_URL = "https://openapi.naver.com/v1/nid/me"
+
+    def __init__(self, state: str) -> None:
+        self.state = state
+
     async def get_login_redirect_url(self) -> str:
-        return ""
+        query_params = {
+            "client_id": self.CLIENT_ID,
+            "redirect_uri": self.REDIRECT_URI,
+            "response_type": "code",
+            "state": self.state,
+        }
+        return f"{self.AUTHORIZATION_URL}?{urlencode(query_params)}"
 
     async def get_user_data(self, code: str) -> Any:
-        return ""
+        data = {
+            "code": code,
+            "client_id": self.CLIENT_ID,
+            "client_secret": self.CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "state": self.state,
+        }
+        async with httpx.AsyncClient() as client:
+            try:
+                token_response = await client.post(self.TOKEN_URL, data=data)
+                token_response.raise_for_status()
+                response_content = token_response.json()
+                access_token = response_content["access_token"]
+            except httpx.RequestError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Request error: {str(e)}",
+                )
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(
+                    status_code=e.response.status_code, detail=f"HTTP error: {str(e)}"
+                )
+
+            try:
+                # 프로필 정보 요청
+                headers = {"Authorization": f"Bearer {access_token}"}
+                profile_response = await client.get(
+                    self.USER_PROFILE_URL, headers=headers
+                )
+                profile_response.raise_for_status()
+                profile_content = profile_response.json()
+
+                # 사용자 정보 추출
+                if profile_content.get("resultcode") != "00":
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Failed to retrieve user profile",
+                    )
+
+                user_info = profile_content.get("response", {})
+                return UserInfo(
+                    sns_id=user_info.get("id"),
+                    email=user_info.get("email"),
+                    name=user_info.get("name"),
+                    profile_image=user_info.get("profile_image"),
+                )
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                )
