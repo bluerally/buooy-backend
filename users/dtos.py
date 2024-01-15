@@ -35,6 +35,7 @@ class LoginResponseData(BaseModel):
 
 class RedirectUrlInfo(BaseModel):
     redirect_url: Optional[str] = ""
+    state: Optional[str] = ""
 
 
 class SocialLoginRedirectResponse(BaseResponse):
