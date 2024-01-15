@@ -8,11 +8,6 @@ from fastapi import HTTPException, status
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
-from common.constants import (
-    AUTH_PLATFORM_GOOGLE,
-    AUTH_PLATFORM_KAKAO,
-    AUTH_PLATFORM_NAVER,
-)
 from users.dtos import UserInfo
 from users.utils import validate_kakao_id_token
 
@@ -34,7 +29,7 @@ class GoogleAuth(SocialLogin):
     CLIENT_SECRET = getenv("GOOGLE_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        + f"/{AUTH_PLATFORM_GOOGLE}"
+        # + f"/{AUTH_PLATFORM_GOOGLE}"
     )
 
     @staticmethod
@@ -123,7 +118,7 @@ class KakaoAuth(SocialLogin):
     CLIENT_SECRET = getenv("KAKAO_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        + f"/{AUTH_PLATFORM_KAKAO}"
+        # + f"/{AUTH_PLATFORM_KAKAO}"
     )
 
     def __init__(self, nonce: str) -> None:
@@ -193,7 +188,7 @@ class NaverAuth(SocialLogin):
     CLIENT_SECRET = getenv("NAVER_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        + f"/{AUTH_PLATFORM_NAVER}"
+        # + f"/{AUTH_PLATFORM_NAVER}"
     )
     USER_PROFILE_URL = "https://openapi.naver.com/v1/nid/me"
 
