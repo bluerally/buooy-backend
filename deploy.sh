@@ -19,7 +19,11 @@ echo "GOOGLE_CLIENT_ID=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_ID" --quer
 echo "GOOGLE_CLIENT_SECRET=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_SECRET" --query "Parameter.Value" --output text)" >> .env
 echo "SECRET_KEY=$(aws ssm get-parameter --name "/SECRET_KEY" --query "Parameter.Value" --output text)" >> .env
 echo "APP_ENV=$(aws ssm get-parameter --name "/APP_ENV" --query "Parameter.Value" --output text)" >> .env
-
+echo "KAKAO_CLIENT_ID=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_ID" --query "Parameter.Value" --output text)" >> .env
+echo "KAKAO_CLIENT_SECRET=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_SECRET" --query "Parameter.Value" --output text)" >> .env
+echo "NAVER_CLIENT_ID=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_ID" --query "Parameter.Value" --output text)" >> .env
+echo "NAVER_CLIENT_SECRET=$(aws ssm get-parameter --name "/GOOGLE_CLIENT_SECRET" --query "Parameter.Value" --output text)" >> .env
+echo "REDIRECT_URI=$(aws ssm get-parameter --name "/REDIRECT_URI" --query "Parameter.Value" --output text)" >> .env
 
 aws s3 cp s3://blue-rally/metadata.txt metadata.txt
 IMAGE_TAG=$(cat metadata.txt)
