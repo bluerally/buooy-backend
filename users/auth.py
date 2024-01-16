@@ -3,6 +3,11 @@ from os import getenv
 from typing import Any
 from urllib.parse import urlencode
 
+from common.constants import (
+    AUTH_PLATFORM_NAVER,
+    AUTH_PLATFORM_GOOGLE,
+    AUTH_PLATFORM_KAKAO,
+)
 import httpx
 from fastapi import HTTPException, status
 from google.auth.transport import requests
@@ -29,7 +34,7 @@ class GoogleAuth(SocialLogin):
     CLIENT_SECRET = getenv("GOOGLE_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        # + f"/{AUTH_PLATFORM_GOOGLE}"
+        + f"/{AUTH_PLATFORM_GOOGLE}"
     )
 
     @staticmethod
@@ -118,7 +123,7 @@ class KakaoAuth(SocialLogin):
     CLIENT_SECRET = getenv("KAKAO_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        # + f"/{AUTH_PLATFORM_KAKAO}"
+        + f"/{AUTH_PLATFORM_KAKAO}"
     )
 
     def __init__(self, nonce: str) -> None:
@@ -188,7 +193,7 @@ class NaverAuth(SocialLogin):
     CLIENT_SECRET = getenv("NAVER_CLIENT_SECRET")
     REDIRECT_URI = (
         getenv("REDIRECT_URI", default="http://localhost:8000/api/user/auth")
-        # + f"/{AUTH_PLATFORM_NAVER}"
+        + f"/{AUTH_PLATFORM_NAVER}"
     )
     USER_PROFILE_URL = "https://openapi.naver.com/v1/nid/me"
 

@@ -1,6 +1,6 @@
 from os import getenv
 from pathlib import Path
-
+from typing import Union, Dict, Any
 from tortoise import Tortoise
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,9 +14,12 @@ APP_ENV_TEST = "test"
 APP_ENV = getenv("APP_ENV", APP_ENV_LOCAL)
 IS_PRODUCTION = APP_ENV == APP_ENV_PROD
 
+LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
+
 MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
 # if IS_PRODUCTION:
+DB_CONNECTION: Union[str, Dict[str, Any]]
 if APP_ENV != APP_ENV_TEST:
     DB_CONNECTION = {
         "engine": "tortoise.backends.mysql",

@@ -1,6 +1,7 @@
 from typing import List, Optional
 import uuid
 from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import RedirectResponse
 
 from common.choices import SocialAuthPlatform
 from common.constants import (
@@ -8,11 +9,12 @@ from common.constants import (
     AUTH_PLATFORM_KAKAO,
     AUTH_PLATFORM_NAVER,
 )
+from common.config import LOGIN_REDIRECT_URL
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
 from users.dtos import (
-    SocialLoginCallbackResponse,
+    SocialLoginTokenResponse,
     UserInfo,
     SocialLoginRedirectResponse,
     RedirectUrlInfo,
@@ -46,24 +48,23 @@ async def get_social_login_redirect_url(
     platform: SocialAuthPlatform,
 ) -> SocialLoginRedirectResponse:
     auth: SocialLogin
-    _state = None
     if platform == AUTH_PLATFORM_GOOGLE:
         auth = GoogleAuth()
     elif platform == AUTH_PLATFORM_KAKAO:
         session_nonce = str(uuid.uuid4())
         auth = KakaoAuth(session_nonce)
-        _state = session_nonce
+        request.session["nonce"] = session_nonce
     elif platform == AUTH_PLATFORM_NAVER:
         session_state = str(uuid.uuid4())
         auth = NaverAuth(session_state)
-        _state = session_state
+        request.session["state"] = session_state
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
         )
 
     redirect_url = await auth.get_login_redirect_url()
-    redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url, state=_state)
+    redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
 
     return SocialLoginRedirectResponse(
         status_code=status.HTTP_200_OK,
@@ -72,33 +73,37 @@ async def get_social_login_redirect_url(
     )
 
 
-@user_router.get("/auth/{platform}", response_model=SocialLoginCallbackResponse)
+@user_router.get("/auth/{platform}", response_model=None)
 async def social_auth_callback(
     request: Request,
     platform: SocialAuthPlatform,
     code: str,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
-    state: Optional[str] = None,
-) -> SocialLoginCallbackResponse:
+) -> RedirectResponse:
     auth: SocialLogin
 
     if platform == AUTH_PLATFORM_GOOGLE:
         auth = GoogleAuth()
-    elif platform == AUTH_PLATFORM_KAKAO and state:
+    elif platform == AUTH_PLATFORM_KAKAO:
         if error is not None or error_description is not None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Kakao authorization Error, error: {error}, error_description: {error_description}",
+            # TODO logging 필요
+            return RedirectResponse(
+                url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
             )
-        auth = KakaoAuth(state)
-    elif platform == AUTH_PLATFORM_NAVER and state:
+
+        session_nonce = request.session.get("nonce")
+        auth = KakaoAuth(session_nonce)
+    elif platform == AUTH_PLATFORM_NAVER:
         if error is not None or error_description is not None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Kakao authorization Error, error: {error}, error_description: {error_description}",
+            # TODO logging 필요
+            return RedirectResponse(
+                url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
             )
-        auth = NaverAuth(state)
+        session_state = request.session.get("state")
+        auth = NaverAuth(session_state)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
@@ -119,29 +124,58 @@ async def social_auth_callback(
                 user.profile_image = user_info.profile_image
                 await user.save()
 
-        # Access, Refresh 토큰 생성 및 저장
-        access_token = create_access_token(data={"user_id": user.id})
-        refresh_token = await create_refresh_token(user)
+        # 토큰 발행된 user_id 저장
+        request.session["user_id"] = user.id
 
-        return SocialLoginCallbackResponse(
-            status_code=status.HTTP_200_OK,
-            message="Login successful",
-            data=LoginResponseData(
-                user_info=user_info,
-                access_token=access_token,
-                refresh_token=refresh_token,
-            ),
-        )
+        return RedirectResponse(url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}")
+
     except HTTPException as e:
-        return SocialLoginCallbackResponse(
-            status_code=e.status_code, message=str(e.detail), data=None
+        return RedirectResponse(
+            url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={e.detail}&error_status={e.status_code}",
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
         )
 
 
-@user_router.post("/auth/token/refresh", response_model=SocialLoginCallbackResponse)
+@user_router.post("/auth/token", response_model=SocialLoginTokenResponse)
+async def login_access_token(request: Request) -> SocialLoginTokenResponse:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Need user ID"
+        )
+
+    user = await User.get_or_none(id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found with user ID",
+        )
+
+    user_info = UserInfo(
+        sns_id=user.sns_id,
+        email=user.email,
+        name=user.name,
+        profile_image=user.profile_image,
+    )
+
+    # Access, Refresh 토큰 생성 및 저장
+    access_token = create_access_token(data={"user_id": user.id})
+    refresh_token = await create_refresh_token(user)
+    return SocialLoginTokenResponse(
+        status_code=status.HTTP_200_OK,
+        message="Login successful",
+        data=LoginResponseData(
+            user_info=user_info,
+            access_token=access_token,
+            refresh_token=refresh_token,
+        ),
+    )
+
+
+@user_router.post("/auth/token/refresh", response_model=SocialLoginTokenResponse)
 async def access_token_refresh(
     body: RefreshTokenRequest, user: User = Depends(get_current_user)
-) -> SocialLoginCallbackResponse:
+) -> SocialLoginTokenResponse:
     refresh_token = body.refresh_token
 
     is_token_active = await is_active_refresh_token(
@@ -155,7 +189,7 @@ async def access_token_refresh(
     # 새로운 Access 토큰 생성
     access_token = create_access_token(data={"user_id": user.id})
 
-    return SocialLoginCallbackResponse(
+    return SocialLoginTokenResponse(
         status_code=status.HTTP_200_OK,
         message="Token refreshed successfully",
         data=LoginResponseData(

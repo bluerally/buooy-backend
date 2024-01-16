@@ -42,7 +42,7 @@ class SocialLoginRedirectResponse(BaseResponse):
     data: Optional[RedirectUrlInfo] = None
 
 
-class SocialLoginCallbackResponse(BaseResponse):
+class SocialLoginTokenResponse(BaseResponse):
     data: Optional[LoginResponseData] = None
 
 
