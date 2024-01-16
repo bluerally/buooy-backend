@@ -25,6 +25,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 class PartyInfo(BaseModel):
+    id: int
     title: str
     sport_name: str
     gather_date: str

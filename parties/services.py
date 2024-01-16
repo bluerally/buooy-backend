@@ -150,6 +150,7 @@ class PartyDetailService:
         )
 
         return PartyDetail(
+            id=self.party.id,
             sport_name=self.party.sport.name,
             title=self.party.title,
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
@@ -229,6 +230,7 @@ class PartyListService:
             party=party, status=ParticipationStatus.APPROVED
         ).count()
         return PartyListDetail(
+            id=party.id,
             sport_name=party.sport.name,
             title=party.title,
             gather_date=party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
