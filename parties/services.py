@@ -4,9 +4,10 @@ from datetime import datetime, UTC
 from parties.dtos import ParticipantProfile, PartyDetail, PartyListDetail
 from users.dtos import UserSimpleProfile
 from common.constants import (
-    FORMAT_YYYY_d_MM_d_DD__HH_MM,
     FORMAT_YYYY_d_MM_d_DD,
     FORMAT_HH_MM,
+    FORMAT_YYYY_MM_DD,
+    FORMAT_YYYY_MM_DD_T_HH_MM_SS,
 )
 from typing import List, Optional
 from tortoise.expressions import Q
@@ -153,10 +154,10 @@ class PartyDetailService:
             id=self.party.id,
             sport_name=self.party.sport.name,
             title=self.party.title,
-            gather_date=self.party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
+            gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=participants_info,
-            due_date=self.party.due_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(
@@ -164,7 +165,7 @@ class PartyDetailService:
                 name=self.party.organizer_user.name,
                 user_id=self.party.organizer_user_id,
             ),
-            posted_date=self.party.created_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            posted_date=self.party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
             is_user_organizer=user.id == self.party.organizer_user_id
             if user
             else False,
@@ -196,16 +197,12 @@ class PartyListService:
 
             if gather_date_min:
                 query &= Q(
-                    gather_at__gte=datetime.strptime(
-                        gather_date_min, FORMAT_YYYY_d_MM_d_DD
-                    )
+                    gather_at__gte=datetime.strptime(gather_date_min, FORMAT_YYYY_MM_DD)
                 )
 
             if gather_date_max:
                 query &= Q(
-                    gather_at__lte=datetime.strptime(
-                        gather_date_max, FORMAT_YYYY_d_MM_d_DD
-                    )
+                    gather_at__lte=datetime.strptime(gather_date_max, FORMAT_YYYY_MM_DD)
                 )
 
             if search_query:
@@ -236,7 +233,7 @@ class PartyListService:
             gather_date=party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
             gather_time=party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=f"{approved_participants}/{party.participant_limit}",
-            due_date=party.due_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
             price=party.participant_cost,
             body=party.body,
             organizer_profile=UserSimpleProfile(
@@ -244,7 +241,7 @@ class PartyListService:
                 name=party.organizer_user.name,
                 user_id=party.organizer_user_id,
             ),
-            posted_date=party.created_at.strftime(FORMAT_YYYY_d_MM_d_DD__HH_MM),
+            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
             is_user_organizer=self.user.id == party.organizer_user_id
             if self.user
             else False,

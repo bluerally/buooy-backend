@@ -17,6 +17,7 @@ party_router = APIRouter(
 )
 
 
+# @party_router.get("/sports", response_model=List[PartyDetailResponse])
 @party_router.post("/", response_model=BaseResponse)
 async def create_party(
     request_data: PartyCreateRequest, user: User = Depends(get_current_user)
