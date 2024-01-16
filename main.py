@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 
 import uvicorn
 from fastapi import FastAPI, Depends
@@ -6,6 +7,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.responses import HTMLResponse
 from tortoise import Tortoise
 
 from common.config import TORTOISE_ORM, SECRET_KEY
@@ -13,8 +15,6 @@ from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware
 from parties.routers import party_router
 from users.routers import user_router
-from starlette.responses import HTMLResponse
-from typing import Any, AsyncIterator
 
 
 @asynccontextmanager
@@ -34,7 +34,6 @@ origins = [
     "http://127.0.0.1:8080",
     "http://127.0.0.1:80",
     "https://www.bluerally.net",
-    "http://www.bluerally.net",
     "http://localhost:3000",
 ]
 

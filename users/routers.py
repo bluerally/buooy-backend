@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 import uuid
 from fastapi import APIRouter, HTTPException, status, Depends, Request
@@ -34,9 +35,11 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
+from common.logging_configs import LoggingAPIRoute
 
 user_router = APIRouter(
     prefix="/api/user",
+    route_class=LoggingAPIRoute,
 )
 
 
@@ -130,6 +133,9 @@ async def social_auth_callback(
         return RedirectResponse(url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}")
 
     except HTTPException as e:
+        logging.error(
+            f"[Social Login Callback Error: platform:{platform.value}, code:{code}, error:{error}, error_details:{error_description}, error_msg:{e}]"
+        )
         return RedirectResponse(
             url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={e.detail}&error_status={e.status_code}",
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -140,6 +146,7 @@ async def social_auth_callback(
 async def login_access_token(request: Request) -> SocialLoginTokenResponse:
     user_id = request.session.get("user_id")
     if not user_id:
+        logging.error(f"[LOGIN API ERROR]: headers: {str(request.headers)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Need user ID"
         )

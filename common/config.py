@@ -1,3 +1,4 @@
+import logging.config
 from os import getenv
 from pathlib import Path
 from typing import Union, Dict, Any
@@ -46,6 +47,45 @@ TORTOISE_ORM = {
         }
     },
 }
+
+# 로깅 설정
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(httpMethod)s - %(url)s - %(headers)s - %(queryParams)s - %(body)s",
+        },
+    },
+    "handlers": {
+        "info_file_handler": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "standard",
+            "filename": "info.log",
+            "maxBytes": 1048576,  # 1MB
+            "backupCount": 5,
+        },
+        "error_file_handler": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "standard",
+            "filename": "error.log",
+            "maxBytes": 1048576,  # 1MB
+            "backupCount": 5,
+        },
+    },
+    "loggers": {
+        "bluerally.api": {
+            "handlers": ["info_file_handler", "error_file_handler"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger("bluerally.api")
 
 
 async def db_init() -> None:
