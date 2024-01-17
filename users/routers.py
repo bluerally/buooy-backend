@@ -149,7 +149,7 @@ async def social_auth_callback(
 
         return RedirectResponse(url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}")
 
-    except HTTPException as e:
+    except Exception as e:
         logging.error(
             f"[Social Login Callback Error: platform:{platform.value}, code:{code}, error:{error}, error_details:{error_description}, error_msg:{e}]"
         )
