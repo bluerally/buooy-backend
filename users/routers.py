@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Any
 import uuid
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -83,7 +83,7 @@ async def social_auth_callback(
     code: str,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
-) -> RedirectResponse:
+) -> Any:  # 테스트 중(임시)
     auth: SocialLogin
 
     if platform == AUTH_PLATFORM_GOOGLE:
@@ -91,9 +91,17 @@ async def social_auth_callback(
     elif platform == AUTH_PLATFORM_KAKAO:
         if error is not None or error_description is not None:
             # TODO logging 필요
-            return RedirectResponse(
-                url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
+            # return RedirectResponse(
+            #     url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
+            #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            # )
+            logging.error(
+                f"[Auth Error]:{platform.value} | {error} | {error_description}"
+            )
+            return BaseResponse(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                message=f"Error: {error}, Error Detail:{error_description}",
+                data=None,
             )
 
         session_nonce = request.session.get("nonce")
@@ -101,10 +109,19 @@ async def social_auth_callback(
     elif platform == AUTH_PLATFORM_NAVER:
         if error is not None or error_description is not None:
             # TODO logging 필요
-            return RedirectResponse(
-                url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
-                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            # return RedirectResponse(
+            #     url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
+            #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            # )
+            logging.error(
+                f"[Auth Error]:{platform.value} | {error} | {error_description}"
             )
+            return BaseResponse(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                message=f"Error: {error}, Error Detail:{error_description}",
+                data=None,
+            )
+
         session_state = request.session.get("state")
         auth = NaverAuth(session_state)
     else:
@@ -136,10 +153,15 @@ async def social_auth_callback(
         logging.error(
             f"[Social Login Callback Error: platform:{platform.value}, code:{code}, error:{error}, error_details:{error_description}, error_msg:{e}]"
         )
-        return RedirectResponse(
-            url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={e.detail}&error_status={e.status_code}",
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+        return BaseResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=f"Error: {e}",
+            data=None,
         )
+        # return RedirectResponse(
+        #     url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={e.detail}&error_status={e.status_code}",
+        #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
+        # )
 
 
 @user_router.post("/auth/token", response_model=SocialLoginTokenResponse)
