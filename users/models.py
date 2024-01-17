@@ -14,6 +14,9 @@ class Sport(BaseModel):
     class Meta:
         table = "sports"
 
+    class PydanticMeta:
+        exclude = ["created_at", "updated_at"]
+
 
 class Certificate(BaseModel):
     name = fields.CharField(max_length=255)
