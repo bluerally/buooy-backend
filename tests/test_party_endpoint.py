@@ -259,3 +259,16 @@ async def test_get_party_list_success(client: AsyncClient) -> None:
 
     # 의존성 오버라이드 초기화
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_sports_list_success(client: AsyncClient) -> None:
+    await Sport.create(name="프리다이빙")
+    await Sport.create(name="스쿠버다이빙")
+    await Sport.create(name="서핑")
+
+    response = await client.get("/api/party/sports")
+    response_data = response.json()
+    sports_list = response_data["data"]
+    assert response.status_code == 200
+    assert len(sports_list) == 3

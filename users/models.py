@@ -2,12 +2,13 @@ from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from common.models import BaseModel
+from typing import Any
 
 
 class Sport(BaseModel):
     name = fields.CharField(max_length=255)
 
-    def __str__(self):
+    def __str__(self) -> Any:
         return self.name
 
     class Meta:
@@ -17,7 +18,7 @@ class Sport(BaseModel):
 class Certificate(BaseModel):
     name = fields.CharField(max_length=255)
 
-    def __str__(self):
+    def __str__(self) -> Any:
         return self.name
 
     class PydanticMeta:
@@ -37,12 +38,12 @@ class CertificateLevel(BaseModel):
 
     level = fields.CharField(max_length=100)
 
-    def certificate_name(self) -> str:
+    def certificate_name(self) -> Any:
         if self.certificate and self.certificate.name:
             return self.certificate.name
         return ""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.certificate.name} - {self.level}"
 
     class PydanticMeta:
@@ -71,7 +72,7 @@ class User(BaseModel):
     class Meta:
         table = "users"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.id} - {self.name}"
 
 
@@ -91,7 +92,7 @@ class UserToken(BaseModel):
         table = "user_tokens"
         indexes = [("user", "is_active"), ("refresh_token",)]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"UserToken for {self.user.id} ({self.token_type}), expires_at: {self.expires_at.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
 
@@ -104,7 +105,7 @@ class UserCertificate(BaseModel):
     class Meta:
         table = "user_certificate_levels"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"USER: {self.user} - CERTIFICATE_LEVEL: {self.certificate_level}"
 
 
@@ -115,7 +116,7 @@ class UserInterestedSport(BaseModel):
     class Meta:
         table = "user_interested_sports"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"USER: {self.user} - SPORT: {self.sport}"
 
 
@@ -127,7 +128,7 @@ class AdminUser(BaseModel):
     class Meta:
         table = "admin_users"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"USER: {self.username}"
 
 
@@ -136,3 +137,4 @@ CertificateName_Pydantic = pydantic_model_creator(Certificate, name="certificate
 CertificateLevel_Pydantic = pydantic_model_creator(
     CertificateLevel, name="certificate_levels"
 )
+SportName_Pydantic = pydantic_model_creator(Sport, name="sports_name")

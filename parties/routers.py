@@ -4,12 +4,12 @@ from common.dtos import BaseResponse
 from common.utils import convert_string_to_datetime
 from parties.models import Party
 from parties.dtos import PartyCreateRequest
-from users.models import User
+from users.models import User, Sport, SportName_Pydantic
 from parties.services import PartyParticipateService
 from fastapi import HTTPException
 from parties.dtos import RefreshTokenRequest, PartyListResponse, PartyDetailResponse
 from parties.services import PartyDetailService, PartyListService
-from typing import Optional
+from typing import Optional, List
 
 
 party_router = APIRouter(
@@ -17,7 +17,17 @@ party_router = APIRouter(
 )
 
 
-# @party_router.get("/sports", response_model=List[PartyDetailResponse])
+# @party_router.get("/sports", response_model=SportListResponse)
+@party_router.get("/sports", response_model=BaseResponse[List[SportName_Pydantic]])
+async def get_sports_list(request: Request) -> BaseResponse:
+    sports_list = await SportName_Pydantic.from_queryset(Sport.all())
+    return BaseResponse(
+        status_code=status.HTTP_200_OK,
+        message="Sports list successfully retrieved",
+        data=sports_list,
+    )
+
+
 @party_router.post("/", response_model=BaseResponse)
 async def create_party(
     request_data: PartyCreateRequest, user: User = Depends(get_current_user)
