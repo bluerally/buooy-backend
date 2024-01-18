@@ -31,7 +31,7 @@ class Party(BaseModel):
     class Meta:
         table = "parties"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.id} - {self.title}"
 
 
@@ -54,5 +54,19 @@ class PartyParticipant(BaseModel):
     class Meta:
         table = "party_participants"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.id} - {self.party} - {self.participant_user} - {self.status}"
+
+
+class PartyComment(BaseModel):
+    commenter = fields.ForeignKeyField(
+        "models.User", null=True, on_delete=fields.SET_NULL
+    )
+    party = fields.ForeignKeyField(
+        "models.Party", null=True, on_delete=fields.SET_NULL, related_name="comments"
+    )
+    content = fields.TextField(null=True)
+    is_deleted = fields.BooleanField(default=False)
+
+    class Meta:
+        table = "party_comments"

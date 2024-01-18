@@ -58,3 +58,28 @@ class PartyDetailResponse(BaseResponse):
 
 class PartyListResponse(BaseResponse):
     data: List[PartyListDetail]
+
+
+class PartyCommentDetail(BaseModel):
+    id: int
+    commenter_profile: UserSimpleProfile
+    posted_date: str
+    content: str
+    is_writer: Optional[bool] = None
+
+
+class PartyCommentResponse(BaseResponse):
+    data: List[PartyCommentDetail]
+
+
+class PartyCommentPostRequest(BaseModel):
+    content: Optional[str] = ""
+    is_delete: Optional[bool] = False
+
+
+class PartyCommentPost(BaseModel):
+    comment_info: PartyCommentDetail
+
+
+class PartyCommentPostResponse(BaseResponse):
+    data: Optional[PartyCommentPost] = None

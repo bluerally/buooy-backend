@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from common.dependencies import get_current_user
 from users.models import User, Sport
 from datetime import datetime, UTC, timedelta
-from parties.models import Party, PartyParticipant, ParticipationStatus
+from parties.models import Party, PartyParticipant, ParticipationStatus, PartyComment
 
 
 @pytest.mark.asyncio
@@ -272,3 +272,123 @@ async def test_get_sports_list_success(client: AsyncClient) -> None:
     sports_list = response_data["data"]
     assert response.status_code == 200
     assert len(sports_list) == 3
+
+
+@pytest.mark.asyncio
+async def test_post_party_comment_success(client: AsyncClient) -> None:
+    user = await User.create(
+        email="commenter@example.com",
+        sns_id="commenter_sns_id",
+        name="Commenter",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=user,
+    )
+
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    comment_content = "This is a test comment."
+    response = await client.post(
+        f"/api/party/{party.id}/comment", json={"content": comment_content}
+    )
+
+    response_data = response.json()
+    assert response_data["data"]["comment_info"]["content"] == comment_content
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_party_comments_success(client: AsyncClient) -> None:
+    user = await User.create(
+        email="commenter@example.com",
+        sns_id="commenter_sns_id",
+        name="Commenter",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=user,
+    )
+    await PartyComment.create(
+        commenter=user, party=party, content="This is a test comment 1."
+    )
+    await PartyComment.create(
+        commenter=user, party=party, content="This is a test comment 2."
+    )
+
+    response = await client.get(f"/api/party/{party.id}/comment")
+    response_data = response.json()
+    assert len(response_data["data"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_change_party_comment_success(client: AsyncClient) -> None:
+    user = await User.create(
+        email="commenter@example.com",
+        sns_id="commenter_sns_id",
+        name="Commenter",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=user,
+    )
+    comment = await PartyComment.create(
+        commenter=user, party=party, content="This is a test comment 1."
+    )
+    new_comment_content = "Updated test comment."
+
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    response = await client.post(
+        f"/api/party/{party.id}/comment/{comment.id}",
+        json={"content": new_comment_content},
+    )
+
+    response_data = response.json()
+    assert response_data["data"]["comment_info"]["content"] == new_comment_content
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_delete_party_comment_success(client: AsyncClient) -> None:
+    user = await User.create(
+        email="commenter@example.com",
+        sns_id="commenter_sns_id",
+        name="Commenter",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=user,
+    )
+    comment = await PartyComment.create(
+        commenter=user, party=party, content="This is a test comment 1."
+    )
+
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    response = await client.post(
+        f"/api/party/{party.id}/comment/{comment.id}", json={"is_delete": True}
+    )
+
+    deleted_comment = await PartyComment.get_or_none(id=comment.id)
+    response_data = response.json()
+    assert response_data.get("data") is None
+    assert deleted_comment.is_deleted is True
+
+    app.dependency_overrides.clear()

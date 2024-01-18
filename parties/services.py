@@ -1,7 +1,14 @@
-from parties.models import Party, PartyParticipant, ParticipationStatus
+import logging
+
+from parties.models import Party, PartyParticipant, ParticipationStatus, PartyComment
 from users.models import User
 from datetime import datetime, UTC
-from parties.dtos import ParticipantProfile, PartyDetail, PartyListDetail
+from parties.dtos import (
+    ParticipantProfile,
+    PartyDetail,
+    PartyListDetail,
+    PartyCommentDetail,
+)
 from users.dtos import UserSimpleProfile
 from common.constants import (
     FORMAT_YYYY_d_MM_d_DD,
@@ -9,7 +16,7 @@ from common.constants import (
     FORMAT_YYYY_MM_DD,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS,
 )
-from typing import List, Optional
+from typing import List, Optional, Union
 from tortoise.expressions import Q
 from fastapi import HTTPException, status
 
@@ -246,3 +253,105 @@ class PartyListService:
             if self.user
             else False,
         )
+
+
+class PartyCommentService:
+    def __init__(self, party_id: int, user: Optional[Union[User, None]] = None) -> None:
+        self.party_id = party_id
+        self.user = user
+
+    async def get_comments(self) -> List[PartyCommentDetail]:
+        comments = await PartyComment.filter(
+            party_id=self.party_id, is_deleted=False
+        ).select_related("commenter")
+        comments_list = [
+            await self._build_party_comment(comment) for comment in comments
+        ]
+        return comments_list
+
+    async def _build_party_comment(self, comment: PartyComment) -> PartyCommentDetail:
+        return PartyCommentDetail(
+            id=comment.id,
+            commenter_profile=UserSimpleProfile(
+                user_id=comment.commenter.id,
+                name=comment.commenter.name,
+                profile_picture=comment.commenter.profile_image,
+            ),
+            posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            content=comment.content,
+            is_writer=comment.commenter.id == self.user.id if self.user else False,
+        )
+
+    async def post_comment(self, content: Optional[str]) -> PartyCommentDetail:
+        if not content:
+            raise ValueError("Party comment must have content")
+        try:
+            comment = await PartyComment.create(
+                party_id=self.party_id, commenter=self.user, content=content
+            )
+            return PartyCommentDetail(
+                id=comment.id,
+                commenter_profile=UserSimpleProfile(
+                    user_id=comment.commenter.id,
+                    name=comment.commenter.name,
+                    profile_picture=comment.commenter.profile_image,
+                ),
+                posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+                content=comment.content,
+            )
+        except Exception as e:
+            logging.error(
+                f"[Party Comment Error]: (POST) party_id:{self.party_id}, msg:{e}"
+            )
+            raise ValueError(f"Party comment posting error - party_id:{self.party_id}")
+
+    async def delete_comment(self, comment_id: int) -> None:
+        comment = await PartyComment.get_or_none(id=comment_id)
+        if not comment:
+            raise ValueError(f"Comment ID does not exist: {comment_id}")
+        if self.user and comment.commenter_id != self.user.id:
+            raise PermissionError(
+                f"User is not commenter of the comment ID d: {comment_id}"
+            )
+        try:
+            comment.is_deleted = True
+            await comment.save()
+        except Exception as e:
+            logging.error(
+                f"[Party Comment Error]: (DELETE) party_id:{self.party_id}, comment_id:{comment_id}, msg:{e}"
+            )
+            raise ValueError(f"Party comment delete error - comment_id:{comment_id}")
+
+    async def change_comment(
+        self, comment_id: int, content: Optional[str]
+    ) -> PartyCommentDetail:
+        if not content:
+            raise ValueError("Party comment must have content")
+        comment = await PartyComment.get_or_none(id=comment_id).select_related(
+            "commenter"
+        )
+        if not comment:
+            raise ValueError(f"Comment ID does not exist: {comment_id}")
+
+        if self.user and comment.commenter_id != self.user.id:
+            raise PermissionError(
+                f"User is not commenter of the comment ID d: {comment_id}"
+            )
+        try:
+            comment.content = content
+            await comment.save()
+            return PartyCommentDetail(
+                id=comment.id,
+                commenter_profile=UserSimpleProfile(
+                    user_id=comment.commenter.id,
+                    name=comment.commenter.name,
+                    profile_picture=comment.commenter.profile_image,
+                ),
+                posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+                content=comment.content,
+            )
+        except Exception as e:
+            logging.error(
+                f"[Party Comment Error]: (CHANGE) party_id:{self.party_id}, comment_id:{comment_id}, msg:{e}"
+            )
+            raise ValueError(f"Party comment change error - comment_id:{comment_id}")
