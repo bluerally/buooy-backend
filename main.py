@@ -46,16 +46,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuthMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-# app.add_middleware(
-#     SessionMiddleware,
-#     secret_key=SECRET_KEY,
-#     session_cookie="session",
-#     max_age=1800,
-#     same_site="None",
-#     secure=True,
-#     httponly=True,
-# )
+# app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    session_cookie="session",
+    max_age=1800,
+    same_site="strict",
+    https_only=True,
+)
 
 # router include
 app.include_router(user_router)
