@@ -62,7 +62,7 @@ LOGGING_CONFIG = {
             "level": "INFO",
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "standard",
-            "filename": "info.log",
+            "filename": "logs/info.log",
             "maxBytes": 1048576,  # 1MB
             "backupCount": 5,
         },
@@ -70,7 +70,7 @@ LOGGING_CONFIG = {
             "level": "ERROR",
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "standard",
-            "filename": "error.log",
+            "filename": "logs/error.log",
             "maxBytes": 1048576,  # 1MB
             "backupCount": 5,
         },

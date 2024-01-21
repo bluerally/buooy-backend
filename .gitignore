@@ -285,3 +285,6 @@ bun.lockb
 .DS_Store
 
 .python-version
+
+logs/*
+!logs/.gitkeep

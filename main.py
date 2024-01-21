@@ -69,6 +69,9 @@ async def health_check() -> str:
     return "Health Check Succeed!"
 
 
+# @app.get("/test")
+# async def test_api() -> Response:
+#     return Response(status_code=201, content={"data": [1, 2, 3, 4]})
 # @app.get("/home", response_model=None)
 # async def test_auth(request: Request):
 #     return templates.TemplateResponse(name="index.html", context={"request": request})
