@@ -67,7 +67,9 @@ async def is_active_refresh_token(user: User, refresh_token: str) -> bool:
 
 
 async def validate_kakao_id_token(
-    id_token: Union[str, None], client_id: Union[str, None], session_nonce: str
+    id_token: Union[str, None],
+    client_id: Union[str, None],
+    session_nonce: Optional[str] = None,
 ) -> Dict[str, Any]:
     decoded_id_token: Dict[str, Any] = {}
     if not id_token or not client_id:
@@ -86,8 +88,8 @@ async def validate_kakao_id_token(
         return decoded_id_token
     if payload_data.get("exp") < datetime.now(UTC).timestamp():
         return decoded_id_token
-    if payload_data.get("nonce") != session_nonce:
-        return decoded_id_token
+    # if payload_data.get("nonce") != session_nonce:
+    #     return decoded_id_token
 
     async with httpx.AsyncClient() as client:
         jwks_response = await client.get(

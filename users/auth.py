@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from os import getenv
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlencode
 
 from common.constants import (
@@ -126,7 +126,7 @@ class KakaoAuth(SocialLogin):
         + f"/{AUTH_PLATFORM_KAKAO}"
     )
 
-    def __init__(self, nonce: str) -> None:
+    def __init__(self, nonce: Optional[str] = None) -> None:
         self.nonce = nonce
 
     async def get_login_redirect_url(self) -> str:
@@ -197,7 +197,7 @@ class NaverAuth(SocialLogin):
     )
     USER_PROFILE_URL = "https://openapi.naver.com/v1/nid/me"
 
-    def __init__(self, state: str) -> None:
+    def __init__(self, state: Optional[str] = None) -> None:
         self.state = state
 
     async def get_login_redirect_url(self) -> str:

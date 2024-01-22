@@ -1,8 +1,9 @@
 import logging
-from typing import List, Optional, Any
+from typing import List, Optional
 import uuid
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import RedirectResponse
+from fastapi.security import APIKeyCookie
 
 from common.choices import SocialAuthPlatform
 from common.constants import (
@@ -42,6 +43,8 @@ user_router = APIRouter(
     route_class=LoggingAPIRoute,
 )
 
+cookie_scheme = APIKeyCookie(name="session")
+
 
 @user_router.get(
     "/auth/redirect-url/{platform}",
@@ -58,11 +61,11 @@ async def get_social_login_redirect_url(
     elif platform == AUTH_PLATFORM_KAKAO:
         session_nonce = str(uuid.uuid4())
         auth = KakaoAuth(session_nonce)
-        request.session["nonce"] = session_nonce
+        # request.session["nonce"] = session_nonce
     elif platform == AUTH_PLATFORM_NAVER:
         session_state = str(uuid.uuid4())
         auth = NaverAuth(session_state)
-        request.session["state"] = session_state
+        # request.session["state"] = session_state
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
@@ -88,7 +91,7 @@ async def social_auth_callback(
     code: str,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
-) -> Any:  # 테스트 중(임시)
+) -> RedirectResponse:
     auth: SocialLogin
 
     if platform == AUTH_PLATFORM_GOOGLE:
@@ -101,15 +104,16 @@ async def social_auth_callback(
             #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
             # )
             logging.error(
-                f"[Auth Error]:{platform.value} | {error} | {error_description}"
+                f"[Auth Error]:platform-{platform.value} | error-{error} | desc-{error_description}"
             )
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=f"Error: {error}, Error Detail:{error_description}",
             )
 
-        session_nonce = request.session.get("nonce")
-        auth = KakaoAuth(session_nonce)
+        # session_nonce = request.session.get("nonce")
+        # auth = KakaoAuth(session_nonce)
+        auth = KakaoAuth()
     elif platform == AUTH_PLATFORM_NAVER:
         if error is not None or error_description is not None:
             # TODO logging 필요
@@ -118,15 +122,16 @@ async def social_auth_callback(
             #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
             # )
             logging.error(
-                f"[Auth Error]:{platform.value} | {error} | {error_description}"
+                f"[Auth Error]:platform-{platform.value} | error-{error} | desc-{error_description}"
             )
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=f"Error: {error}, Error Detail:{error_description}",
             )
 
-        session_state = request.session.get("state")
-        auth = NaverAuth(session_state)
+        # session_state = request.session.get("state")
+        # auth = NaverAuth(session_state)
+        auth = NaverAuth()
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"

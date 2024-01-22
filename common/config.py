@@ -3,6 +3,8 @@ from os import getenv
 from pathlib import Path
 from typing import Union, Dict, Any
 from tortoise import Tortoise
+# import fakeredis
+# import redis
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,6 +16,7 @@ APP_ENV_PROD = "prod"
 APP_ENV_TEST = "test"
 APP_ENV = getenv("APP_ENV", APP_ENV_LOCAL)
 IS_PRODUCTION = APP_ENV == APP_ENV_PROD
+IS_TEST = APP_ENV == APP_ENV_TEST
 
 LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
 
@@ -48,6 +51,9 @@ TORTOISE_ORM = {
     },
 }
 
+# REDIS
+# redis = fakeredis.FakeRedis() if IS_TEST else redis.Redis(host=getenv("REDIS_HOST", "localhost"), port=getenv("REDIS_PORT", 6379))
+
 # 로깅 설정
 LOGGING_CONFIG = {
     "version": 1,
@@ -78,7 +84,6 @@ LOGGING_CONFIG = {
     "loggers": {
         "bluerally.api": {
             "handlers": ["info_file_handler", "error_file_handler"],
-            "level": "INFO",
             "propagate": False,
         },
     },

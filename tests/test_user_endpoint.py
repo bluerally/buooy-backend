@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch, AsyncMock, Mock
+from unittest.mock import patch, Mock
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
@@ -49,20 +49,18 @@ MOCKED_GOOGLE_USER_INFO = {
 @patch("httpx.AsyncClient.post")
 @pytest.mark.asyncio
 async def test_social_auth_google(
-    mock_post: AsyncMock, mock_verify: Mock, client: AsyncClient
+    mock_post: Mock, mock_verify: Mock, client: AsyncClient
 ) -> None:
-    mock_post.return_value.json = AsyncMock(
-        return_value={
-            "access_token": "mock_access_token",
-            "id_token": "mock_id_token",
-            "expires_in": 3599,
-            "token_type": "Bearer",
-        }
-    )
+    mock_post.return_value.json = lambda: {
+        "access_token": "mock_access_token",
+        "id_token": "mock_id_token",
+        "expires_in": 3599,
+        "token_type": "Bearer",
+    }
 
     response = await client.get("/api/user/auth/google", params={"code": "testcode"})
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_307_TEMPORARY_REDIRECT
 
 
 @pytest.mark.asyncio
