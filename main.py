@@ -52,7 +52,7 @@ app.add_middleware(
     secret_key=SECRET_KEY,
     session_cookie="session",
     max_age=1800,
-    same_site="strict",
+    same_site="none",
     https_only=True,
 )
 
