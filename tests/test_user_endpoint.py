@@ -94,7 +94,7 @@ async def test_refresh_token_endpoint(client: AsyncClient) -> None:
     )
 
     # 응답 검증
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     assert (
         await UserToken.get_or_none(
             user=user, refresh_token=refresh_token, is_active=True

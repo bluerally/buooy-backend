@@ -27,18 +27,22 @@ party_router = APIRouter(
 )
 
 
-# @party_router.get("/sports", response_model=SportListResponse)
-@party_router.get("/sports", response_model=BaseResponse[List[SportName_Pydantic]])
+@party_router.get(
+    "/sports",
+    response_model=BaseResponse[List[SportName_Pydantic]],
+    status_code=status.HTTP_200_OK,
+)
 async def get_sports_list(request: Request) -> BaseResponse:
     sports_list = await SportName_Pydantic.from_queryset(Sport.all())
     return BaseResponse(
-        status_code=status.HTTP_200_OK,
         message="Sports list successfully retrieved",
         data=sports_list,
     )
 
 
-@party_router.post("/", response_model=BaseResponse)
+@party_router.post(
+    "/", response_model=BaseResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_party(
     request_data: PartyCreateRequest, user: User = Depends(get_current_user)
 ) -> BaseResponse:
@@ -60,13 +64,16 @@ async def create_party(
 
     # 생성된 파티 정보를 응답
     return BaseResponse(
-        status_code=status.HTTP_201_CREATED,
         message="Party created successfully",
         data={"party_id": party.id},
     )
 
 
-@party_router.post("/{party_id}/participate", response_model=BaseResponse)
+@party_router.post(
+    "/{party_id}/participate",
+    response_model=BaseResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def participate_in_party(
     party_id: int, user: User = Depends(get_current_user)
 ) -> BaseResponse:
@@ -74,15 +81,16 @@ async def participate_in_party(
     try:
         await service.participate()
         return BaseResponse(
-            status_code=status.HTTP_200_OK,
             message="Participation requested successfully.",
         )
-    except ValueError as e:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @party_router.post(
-    "/participants/{party_id}/status-change", response_model=BaseResponse
+    "/participants/{party_id}/status-change",
+    response_model=BaseResponse,
+    status_code=status.HTTP_200_OK,
 )
 async def participant_change_participation_status(
     party_id: int, body: RefreshTokenRequest, user: User = Depends(get_current_user)
@@ -94,17 +102,17 @@ async def participant_change_participation_status(
             new_status
         )
         return BaseResponse(
-            status_code=status.HTTP_200_OK,
             data={"participation_id": changed_participation.id},
             message="Participation status changed successfully.",
         )
-    except ValueError as e:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @party_router.post(
     "/organizer/{party_id}/status-change/{participation_id}",
     response_model=BaseResponse,
+    status_code=status.HTTP_200_OK,
 )
 async def organizer_change_participation_status(
     party_id: int,
@@ -119,7 +127,6 @@ async def organizer_change_participation_status(
             participation_id, new_status
         )
         return BaseResponse(
-            status_code=status.HTTP_200_OK,
             data={"participation_id": changed_participation.id},
             message="Participation status changed successfully.",
         )
@@ -127,19 +134,24 @@ async def organizer_change_participation_status(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@party_router.get("/details/{party_id}", response_model=PartyDetailResponse)
+@party_router.get(
+    "/details/{party_id}",
+    response_model=PartyDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def get_party_details(party_id: int, request: Request) -> PartyDetailResponse:
     user = request.state.user
     service = await PartyDetailService.create(party_id)
     party_details = await service.get_party_details(user)
     return PartyDetailResponse(
-        status_code=status.HTTP_200_OK,
         data=party_details,
         message="Party details successfully retrieved.",
     )
 
 
-@party_router.get("/list", response_model=PartyListResponse)
+@party_router.get(
+    "/list", response_model=PartyListResponse, status_code=status.HTTP_200_OK
+)
 async def get_party_list(
     request: Request,
     sport_id: Optional[int] = None,
@@ -158,28 +170,34 @@ async def get_party_list(
         search_query=search_query,
     )
     return PartyListResponse(
-        status_code=status.HTTP_200_OK,
         data=party_list,
         message="Party list successfully retrieved.",
     )
 
 
-@party_router.get("/{party_id}/comment", response_model=PartyCommentResponse)
+@party_router.get(
+    "/{party_id}/comment",
+    response_model=PartyCommentResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def get_party_comments(request: Request, party_id: int) -> PartyCommentResponse:
     user = request.state.user
     try:
         service = PartyCommentService(party_id, user)
         party_comments = await service.get_comments()
-    except ValueError as e:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return PartyCommentResponse(
-        status_code=status.HTTP_200_OK,
         data=party_comments,
         message="Party comments successfully retrieved.",
     )
 
 
-@party_router.post("/{party_id}/comment", response_model=PartyCommentPostResponse)
+@party_router.post(
+    "/{party_id}/comment",
+    response_model=PartyCommentPostResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def post_party_comment(
     party_id: int, body: PartyCommentPostRequest, user: User = Depends(get_current_user)
 ) -> PartyCommentPostResponse:
@@ -192,14 +210,15 @@ async def post_party_comment(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     return PartyCommentPostResponse(
-        status_code=status.HTTP_201_CREATED,
         data=PartyCommentPost(comment_info=posted_comment),
         message="Party comment successfully posted.",
     )
 
 
 @party_router.post(
-    "/{party_id}/comment/{comment_id}", response_model=PartyCommentPostResponse
+    "/{party_id}/comment/{comment_id}",
+    response_model=PartyCommentPostResponse,
+    status_code=status.HTTP_200_OK,
 )
 async def change_party_comment(
     party_id: int,
@@ -213,7 +232,6 @@ async def change_party_comment(
         if is_comment_delete:
             await service.delete_comment(comment_id)
             return PartyCommentPostResponse(
-                status_code=status.HTTP_201_CREATED,
                 message=f"Party comment {comment_id} successfully deleted",
             )
 
@@ -224,7 +242,6 @@ async def change_party_comment(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     return PartyCommentPostResponse(
-        status_code=status.HTTP_201_CREATED,
         data=PartyCommentPost(comment_info=updated_comment),
         message="Party comment successfully updated.",
     )

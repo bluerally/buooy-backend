@@ -1,5 +1,6 @@
 import pytest
 from httpx import AsyncClient
+from starlette import status
 
 from common.dependencies import get_current_user
 from users.models import User, Sport
@@ -40,7 +41,7 @@ async def test_success_party_create(client: AsyncClient) -> None:
     response = await client.post("/api/party/", json=request_data)
 
     # 응답 검증
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_201_CREATED
     assert Party.get_or_none(title=request_data["title"]) is not None
 
     # 오버라이드 초기화
@@ -63,7 +64,7 @@ async def test_success_party_participate(client: AsyncClient) -> None:
 
     response = await client.post(f"/api/party/{test_party.id}/participate")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_201_CREATED
     assert (
         await PartyParticipant.get_or_none(
             party=test_party,

@@ -4,7 +4,6 @@ from typing import TypeVar, Optional
 T = TypeVar("T")
 
 
-class BaseResponse[T](BaseModel):
-    status_code: int = None
+class BaseResponse[T](BaseModel):  # type: ignore
     message: str = ""
-    data: Optional[T] = Field(default=None)
+    data: Optional[T] = Field(default=None)  # type: ignore
