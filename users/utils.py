@@ -74,41 +74,45 @@ async def validate_kakao_id_token(
     decoded_id_token: Dict[str, Any] = {}
     if not id_token or not client_id:
         return decoded_id_token
-    header, payload, signature = id_token.split(".")
-
-    decoded_header = base64url_decode(header).decode("utf-8")
-    header_data = json.loads(decoded_header)
-
-    decoded_payload = base64url_decode(payload).decode("utf-8")
-    payload_data = json.loads(decoded_payload)
-
-    if payload_data.get("iss") != "https://kauth.kakao.com":
-        return decoded_id_token
-    if payload_data.get("aud") != client_id:
-        return decoded_id_token
-    if payload_data.get("exp") < datetime.now(UTC).timestamp():
-        return decoded_id_token
-    # if payload_data.get("nonce") != session_nonce:
-    #     return decoded_id_token
-
-    async with httpx.AsyncClient() as client:
-        jwks_response = await client.get(
-            "https://kauth.kakao.com/.well-known/jwks.json"
-        )
-        jwks = jwks_response.json()
-
-    public_key = None
-    for jwk_key in jwks.get("keys", []):
-        if jwk_key.get("kid") == header_data.get("kid"):
-            public_key = jwk.construct(jwk_key)
-
-    if not public_key:
-        return decoded_id_token
-
     try:
+        header, payload, signature = id_token.split(".")
+
+        decoded_header = base64url_decode(header)
+        header_data = json.loads(decoded_header)
+
+        decoded_payload = base64url_decode(payload)
+        payload_data = json.loads(decoded_payload)
+
+        if payload_data.get("iss") != "https://kauth.kakao.com":
+            return decoded_id_token
+        if payload_data.get("aud") != client_id:
+            return decoded_id_token
+        if payload_data.get("exp") < datetime.now(UTC).timestamp():
+            return decoded_id_token
+        # if payload_data.get("nonce") != session_nonce:
+        #     return decoded_id_token
+
+        async with httpx.AsyncClient() as client:
+            jwks_response = await client.get(
+                "https://kauth.kakao.com/.well-known/jwks.json"
+            )
+            jwks = jwks_response.json()
+
+        public_key = None
+        for jwk_key in jwks.get("keys", []):
+            if jwk_key.get("kid") == header_data.get("kid"):
+                public_key = jwk.construct(jwk_key)
+
+        if not public_key:
+            return decoded_id_token
+
         decoded_id_token = jwt.decode(
             id_token, public_key, algorithms=["RS256"], audience=client_id
         )
         return decoded_id_token
     except jwt.JWTError:
         return decoded_id_token
+    except Exception:
+        raise ValueError(
+            f"[kakao id token validation error] header:{header_data}, {payload_data}"
+        )
