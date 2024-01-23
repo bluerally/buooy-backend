@@ -76,10 +76,10 @@ async def validate_kakao_id_token(
         return decoded_id_token
     header, payload, signature = id_token.split(".")
 
-    decoded_header = base64url_decode(header)
+    decoded_header = base64url_decode(header).decode("utf-8")
     header_data = json.loads(decoded_header)
 
-    decoded_payload = base64url_decode(payload)
+    decoded_payload = base64url_decode(payload).decode("utf-8")
     payload_data = json.loads(decoded_payload)
 
     if payload_data.get("iss") != "https://kauth.kakao.com":

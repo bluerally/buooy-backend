@@ -38,8 +38,7 @@ class AccessTokenResponse(LoginResponseData):
 
 
 class RedirectUrlInfo(BaseModel):
-    redirect_url: Optional[str] = ""
-    state: Optional[str] = ""
+    redirect_url: str
 
 
 class SocialLoginRedirectResponse(BaseResponse):

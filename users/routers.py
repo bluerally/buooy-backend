@@ -19,7 +19,6 @@ from common.logging_configs import LoggingAPIRoute
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
 from users.dtos import (
     UserInfo,
-    SocialLoginRedirectResponse,
     RedirectUrlInfo,
     LoginResponseData,
     RefreshTokenRequest,
@@ -48,36 +47,30 @@ user_router = APIRouter(
 
 @user_router.get(
     "/auth/redirect-url/{platform}",
-    response_model=SocialLoginRedirectResponse,
+    response_model=RedirectUrlInfo,
     status_code=status.HTTP_200_OK,
 )
 async def get_social_login_redirect_url(
     request: Request,
     platform: SocialAuthPlatform,
-) -> SocialLoginRedirectResponse:
+) -> RedirectUrlInfo:
     auth: SocialLogin
     if platform == AUTH_PLATFORM_GOOGLE:
         auth = GoogleAuth()
     elif platform == AUTH_PLATFORM_KAKAO:
         session_nonce = str(uuid.uuid4())
         auth = KakaoAuth(session_nonce)
-        # request.session["nonce"] = session_nonce
     elif platform == AUTH_PLATFORM_NAVER:
         session_state = str(uuid.uuid4())
         auth = NaverAuth(session_state)
-        # request.session["state"] = session_state
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
         )
 
     redirect_url = await auth.get_login_redirect_url()
-    redirect_url_info = RedirectUrlInfo(redirect_url=redirect_url)
 
-    return SocialLoginRedirectResponse(
-        message="redirect URL fetched successfully",
-        data=redirect_url_info,
-    )
+    return RedirectUrlInfo(redirect_url=redirect_url)
 
 
 @user_router.get(
