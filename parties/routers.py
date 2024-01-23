@@ -76,7 +76,7 @@ async def participate_in_party(
         await service.participate()
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content={"Participation requested successfully."},
+            content="Participation requested successfully.",
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

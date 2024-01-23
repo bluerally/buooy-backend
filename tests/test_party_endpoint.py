@@ -269,8 +269,7 @@ async def test_get_sports_list_success(client: AsyncClient) -> None:
     await Sport.create(name="서핑")
 
     response = await client.get("/api/party/sports")
-    response_data = response.json()
-    sports_list = response_data["data"]
+    sports_list = response.json()
     assert response.status_code == 200
     assert len(sports_list) == 3
 

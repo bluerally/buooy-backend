@@ -11,7 +11,6 @@ from parties.dtos import (
 )
 from users.dtos import UserSimpleProfile
 from common.constants import (
-    FORMAT_YYYY_d_MM_d_DD,
     FORMAT_HH_MM,
     FORMAT_YYYY_MM_DD,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS,
@@ -237,7 +236,7 @@ class PartyListService:
             id=party.id,
             sport_name=party.sport.name,
             title=party.title,
-            gather_date=party.gather_at.strftime(FORMAT_YYYY_d_MM_d_DD),
+            gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=f"{approved_participants}/{party.participant_limit}",
             due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
