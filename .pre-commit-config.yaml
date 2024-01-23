@@ -17,4 +17,7 @@ repos:
     - id: mypy
       args: [--strict]
       additional_dependencies:
-        - "pydantic>2.1.0"
+        [
+          "pydantic>2.1.0",
+          "types-redis"
+        ]

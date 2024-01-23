@@ -1,19 +1,21 @@
 import logging
-from typing import List, Optional
 import uuid
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import RedirectResponse
-from fastapi.security import APIKeyCookie
 
 from common.choices import SocialAuthPlatform
+from common.config import LOGIN_REDIRECT_URL
 from common.constants import (
     AUTH_PLATFORM_GOOGLE,
     AUTH_PLATFORM_KAKAO,
     AUTH_PLATFORM_NAVER,
 )
-from common.config import LOGIN_REDIRECT_URL
+from common.cache_constants import CACHE_KEY_LOGIN_REDIRECT_UUID
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
+from common.logging_configs import LoggingAPIRoute
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
 from users.dtos import (
     SocialLoginTokenResponse,
@@ -22,6 +24,7 @@ from users.dtos import (
     RedirectUrlInfo,
     LoginResponseData,
     RefreshTokenRequest,
+    AccessTokenRequest,
 )
 from users.models import (
     CertificateLevel,
@@ -36,14 +39,12 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
-from common.logging_configs import LoggingAPIRoute
+from common.cache_utils import RedisManager
 
 user_router = APIRouter(
     prefix="/api/user",
     route_class=LoggingAPIRoute,
 )
-
-cookie_scheme = APIKeyCookie(name="session")
 
 
 @user_router.get(
@@ -151,9 +152,14 @@ async def social_auth_callback(
             user.profile_image = user_info.profile_image
             await user.save()
 
-    # 토큰 발행된 user_id 저장
-    request.session["user_id"] = user.id
-    return RedirectResponse(url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}")
+    # uid 생성(인증한 유저 확인용)
+    r = RedisManager()
+    user_identify_uuid = str(uuid.uuid4())
+    cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_identify_uuid)
+    r.set_value(cache_key, user.id)
+    return RedirectResponse(
+        url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
+    )
 
 
 @user_router.post(
@@ -161,12 +167,15 @@ async def social_auth_callback(
     response_model=SocialLoginTokenResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def login_access_token(request: Request) -> SocialLoginTokenResponse:
-    user_id = request.session.get("user_id")
+async def login_access_token(body: AccessTokenRequest) -> SocialLoginTokenResponse:
+    user_uuid = body.user_uid
+    r = RedisManager()
+    cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_uuid)
+    user_id = r.get_value(cache_key)
     if not user_id:
-        logging.error(f"[LOGIN API ERROR]: headers: {str(request.headers)}")
+        logging.error(f"[LOGIN API ERROR]: INVALID uuid: {user_uuid}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Need user ID"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid uuid"
         )
 
     user = await User.get_or_none(id=user_id)

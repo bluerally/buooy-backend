@@ -2,9 +2,8 @@ import logging.config
 from os import getenv
 from pathlib import Path
 from typing import Union, Dict, Any
+
 from tortoise import Tortoise
-# import fakeredis
-# import redis
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -50,9 +49,6 @@ TORTOISE_ORM = {
         }
     },
 }
-
-# REDIS
-# redis = fakeredis.FakeRedis() if IS_TEST else redis.Redis(host=getenv("REDIS_HOST", "localhost"), port=getenv("REDIS_PORT", 6379))
 
 # 로깅 설정
 LOGGING_CONFIG = {

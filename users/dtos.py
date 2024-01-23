@@ -48,3 +48,7 @@ class SocialLoginTokenResponse(BaseResponse):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class AccessTokenRequest(BaseModel):
+    user_uid: str

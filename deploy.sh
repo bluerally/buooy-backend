@@ -25,6 +25,7 @@ echo "NAVER_CLIENT_ID=$(aws ssm get-parameter --name "/NAVER_CLIENT_ID" --query 
 echo "NAVER_CLIENT_SECRET=$(aws ssm get-parameter --name "/NAVER_CLIENT_SECRET" --query "Parameter.Value" --output text)" >> .env
 echo "REDIRECT_URI=$(aws ssm get-parameter --name "/REDIRECT_URI" --query "Parameter.Value" --output text)" >> .env
 echo "LOGIN_REDIRECT_URL=$(aws ssm get-parameter --name "/LOGIN_REDIRECT_URL" --query "Parameter.Value" --output text)" >> .env
+echo "REDIS_HOST=$(aws ssm get-parameter --name "/REDIS_HOST" --query "Parameter.Value" --output text)" >> .env
 
 aws s3 cp s3://blue-rally/metadata.txt metadata.txt
 IMAGE_TAG=$(cat metadata.txt)
