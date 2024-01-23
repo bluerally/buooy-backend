@@ -90,11 +90,3 @@ disable_error_code = ["misc"]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
-
-
-[[tool.mypy.overrides]]
-module = "redis"
-ignore_errors = true
-[[tool.mypy.overrides]]
-module = "fakeredis"
-ignore_errors = true
