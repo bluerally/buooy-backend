@@ -1,6 +1,6 @@
 import json
 import secrets
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Union, Any
 from zoneinfo import ZoneInfo
 
@@ -80,15 +80,15 @@ async def validate_kakao_id_token(
         decoded_header = base64url_decode(header)
         header_data = json.loads(decoded_header)
 
-        decoded_payload = base64url_decode(payload)
-        payload_data = json.loads(decoded_payload)
+        # decoded_payload = base64url_decode(payload)
+        # payload_data = json.loads(decoded_payload)
 
-        if payload_data.get("iss") != "https://kauth.kakao.com":
-            return decoded_id_token
-        if payload_data.get("aud") != client_id:
-            return decoded_id_token
-        if payload_data.get("exp") < datetime.now(UTC).timestamp():
-            return decoded_id_token
+        # if payload_data.get("iss") != "https://kauth.kakao.com":
+        #     return decoded_id_token
+        # if payload_data.get("aud") != client_id:
+        #     return decoded_id_token
+        # if payload_data.get("exp") < datetime.now(UTC).timestamp():
+        #     return decoded_id_token
         # if payload_data.get("nonce") != session_nonce:
         #     return decoded_id_token
 
@@ -113,6 +113,4 @@ async def validate_kakao_id_token(
     except jwt.JWTError:
         return decoded_id_token
     except Exception:
-        raise ValueError(
-            f"[kakao id token validation error] header:{header_data}, {payload_data}"
-        )
+        raise ValueError(f"[kakao id token validation error] header:{header_data}")
