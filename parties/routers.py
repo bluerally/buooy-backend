@@ -10,8 +10,6 @@ from common.utils import convert_string_to_datetime
 from parties.dtos import PartyCreateRequest
 from parties.dtos import (
     RefreshTokenRequest,
-    PartyListResponse,
-    PartyDetailResponse,
     PartyCommentResponse,
     PartyCommentPostRequest,
     PartyCommentPostResponse,
@@ -21,6 +19,8 @@ from parties.models import Party
 from parties.services import PartyDetailService, PartyListService, PartyCommentService
 from parties.services import PartyParticipateService
 from users.models import User, Sport, SportName_Pydantic
+from parties.dto.response import PartyParticipantStatusChangeResponse
+from parties.dtos import PartyListDetail, PartyDetail
 
 party_router = APIRouter(
     prefix="/api/party",
@@ -84,21 +84,20 @@ async def participate_in_party(
 
 @party_router.post(
     "/participants/{party_id}/status-change",
-    response_model=BaseResponse,
+    response_model=PartyParticipantStatusChangeResponse,
     status_code=status.HTTP_200_OK,
 )
 async def participant_change_participation_status(
     party_id: int, body: RefreshTokenRequest, user: User = Depends(get_current_user)
-) -> BaseResponse:
+) -> PartyParticipantStatusChangeResponse:
     new_status = body.new_status
     service = await PartyParticipateService.create(party_id, user)
     try:
         changed_participation = await service.participant_change_participation_status(
             new_status
         )
-        return BaseResponse(
-            data={"participation_id": changed_participation.id},
-            message="Participation status changed successfully.",
+        return PartyParticipantStatusChangeResponse(
+            participation_id=changed_participation.id, status=new_status
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -131,21 +130,18 @@ async def organizer_change_participation_status(
 
 @party_router.get(
     "/details/{party_id}",
-    response_model=PartyDetailResponse,
+    response_model=PartyDetail,
     status_code=status.HTTP_200_OK,
 )
-async def get_party_details(party_id: int, request: Request) -> PartyDetailResponse:
+async def get_party_details(party_id: int, request: Request) -> PartyDetail:
     user = request.state.user
     service = await PartyDetailService.create(party_id)
     party_details = await service.get_party_details(user)
-    return PartyDetailResponse(
-        data=party_details,
-        message="Party details successfully retrieved.",
-    )
+    return party_details
 
 
 @party_router.get(
-    "/list", response_model=PartyListResponse, status_code=status.HTTP_200_OK
+    "/list", response_model=List[PartyListDetail], status_code=status.HTTP_200_OK
 )
 async def get_party_list(
     request: Request,
@@ -154,7 +150,7 @@ async def get_party_list(
     gather_date_min: Optional[str] = None,
     gather_date_max: Optional[str] = None,
     search_query: Optional[str] = None,
-) -> PartyListResponse:
+) -> List[PartyListDetail]:
     user = request.state.user
     service = PartyListService(user)
     party_list = await service.get_party_list(
@@ -164,10 +160,7 @@ async def get_party_list(
         gather_date_max=gather_date_max,
         search_query=search_query,
     )
-    return PartyListResponse(
-        data=party_list,
-        message="Party list successfully retrieved.",
-    )
+    return party_list
 
 
 @party_router.get(

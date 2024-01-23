@@ -177,6 +177,7 @@ class PartyDetailService:
             else False,
             pending_participants=pending_participants,
             approved_participants=approved_participants,
+            is_active=self.party.is_active,
         )
 
 
@@ -251,6 +252,7 @@ class PartyListService:
             is_user_organizer=self.user.id == party.organizer_user_id
             if self.user
             else False,
+            is_active=party.is_active,
         )
 
 

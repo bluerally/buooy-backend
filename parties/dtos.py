@@ -36,6 +36,7 @@ class PartyInfo(BaseModel):
     body: str
     organizer_profile: UserSimpleProfile
     posted_date: str
+    is_active: bool
 
 
 class ParticipantProfile(UserSimpleProfile):

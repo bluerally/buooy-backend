@@ -198,14 +198,13 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
     # API 호출
     response = await client.get(f"/api/party/details/{test_party.id}")
     response_data = response.json()
-    data = response_data["data"]
     # 응답 검증
     assert response.status_code == 200
-    assert data["sport_name"] == "Freediving"
-    assert data["participants_info"] == "3/10"
-    assert data["organizer_profile"]["name"] == "Organizer User"
-    assert len(data["approved_participants"]) == 3
-    assert len(data["pending_participants"]) == 2
+    assert response_data["sport_name"] == "Freediving"
+    assert response_data["participants_info"] == "3/10"
+    assert response_data["organizer_profile"]["name"] == "Organizer User"
+    assert len(response_data["approved_participants"]) == 3
+    assert len(response_data["pending_participants"]) == 2
 
     # 의존성 오버라이드 초기화
     app.dependency_overrides.clear()
@@ -252,11 +251,10 @@ async def test_get_party_list_success(client: AsyncClient) -> None:
     # API 호출
     response = await client.get("/api/party/list")
     response_data = response.json()
-    parties = response_data["data"]
 
     # 응답 검증
     assert response.status_code == 200
-    assert len(parties) == 2
+    assert len(response_data) == 2
 
     # 의존성 오버라이드 초기화
     app.dependency_overrides.clear()
