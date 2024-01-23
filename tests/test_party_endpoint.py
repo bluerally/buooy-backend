@@ -296,7 +296,7 @@ async def test_post_party_comment_success(client: AsyncClient) -> None:
     )
 
     response_data = response.json()
-    assert response_data["data"]["comment_info"]["content"] == comment_content
+    assert response_data["content"] == comment_content
 
     app.dependency_overrides.clear()
 
@@ -323,7 +323,7 @@ async def test_get_party_comments_success(client: AsyncClient) -> None:
 
     response = await client.get(f"/api/party/{party.id}/comment")
     response_data = response.json()
-    assert len(response_data["data"]) == 2
+    assert len(response_data) == 2
 
 
 @pytest.mark.asyncio
@@ -354,7 +354,7 @@ async def test_change_party_comment_success(client: AsyncClient) -> None:
     )
 
     response_data = response.json()
-    assert response_data["data"]["comment_info"]["content"] == new_comment_content
+    assert response_data["content"] == new_comment_content
 
     app.dependency_overrides.clear()
 
@@ -380,13 +380,9 @@ async def test_delete_party_comment_success(client: AsyncClient) -> None:
 
     app.dependency_overrides[get_current_user] = lambda: user
 
-    response = await client.post(
-        f"/api/party/{party.id}/comment/{comment.id}", json={"is_delete": True}
-    )
-
+    response = await client.delete(f"/api/party/{party.id}/comment/{comment.id}")
     deleted_comment = await PartyComment.get_or_none(id=comment.id)
-    response_data = response.json()
-    assert response_data.get("data") is None
+    assert response.status_code == status.HTTP_200_OK
     assert deleted_comment.is_deleted is True
 
     app.dependency_overrides.clear()

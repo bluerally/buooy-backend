@@ -5,21 +5,6 @@ from users.dtos import UserSimpleProfile
 from common.dtos import BaseResponse
 
 
-class PartyCreateRequest(BaseModel):
-    title: str = ""
-    body: Optional[str] = None
-    gather_at: str = ""
-    due_at: str = ""
-    place_id: int = 1
-    place_name: str = ""
-    address: str = ""
-    longitude: float = 0
-    latitude: float = 0
-    participant_limit: int = 2
-    participant_cost: int = 0
-    sport_id: int = 1
-
-
 class RefreshTokenRequest(BaseModel):
     new_status: ParticipationStatus
 
@@ -74,8 +59,7 @@ class PartyCommentResponse(BaseResponse):
 
 
 class PartyCommentPostRequest(BaseModel):
-    content: Optional[str] = ""
-    is_delete: Optional[bool] = False
+    content: str
 
 
 class PartyCommentPost(BaseModel):
