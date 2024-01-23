@@ -17,7 +17,7 @@ class RedisManager:
         self.redis_db = int(getenv("REDIS_DB", 0))
 
     @contextmanager
-    def _get_redis_client(self) -> Iterator[redis.Redis[Any]]:
+    def _get_redis_client(self) -> Iterator[redis.Redis]:  # type: ignore[type-arg]
         client = (
             fakeredis.FakeRedis()
             if IS_TEST
