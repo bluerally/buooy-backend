@@ -18,7 +18,7 @@ APP_ENV = getenv("APP_ENV", APP_ENV_LOCAL)
 IS_PRODUCTION = APP_ENV == APP_ENV_PROD
 IS_TEST = APP_ENV == APP_ENV_TEST
 
-LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
+LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="https://localhost:3001")
 
 MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
