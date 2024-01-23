@@ -33,6 +33,10 @@ class LoginResponseData(BaseModel):
     refresh_token: str = ""
 
 
+class AccessTokenResponse(LoginResponseData):
+    is_new_user: bool
+
+
 class RedirectUrlInfo(BaseModel):
     redirect_url: Optional[str] = ""
     state: Optional[str] = ""

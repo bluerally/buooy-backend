@@ -25,6 +25,7 @@ from users.dtos import (
     RefreshTokenRequest,
     AccessTokenRequest,
 )
+from users.dto.response import AccessTokenResponse
 from users.models import (
     CertificateLevel,
     Certificate,
@@ -169,10 +170,10 @@ async def social_auth_callback(
 
 @user_router.post(
     "/auth/token",
-    response_model=LoginResponseData,
+    response_model=AccessTokenResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def login_access_token(body: AccessTokenRequest) -> LoginResponseData:
+async def login_access_token(body: AccessTokenRequest) -> AccessTokenResponse:
     user_uuid = body.user_uid
     r = RedisManager()
     cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_uuid)
@@ -200,10 +201,11 @@ async def login_access_token(body: AccessTokenRequest) -> LoginResponseData:
     # Access, Refresh 토큰 생성 및 저장
     access_token = create_access_token(data={"user_id": user.id})
     refresh_token = await create_refresh_token(user)
-    return LoginResponseData(
+    return AccessTokenResponse(
         user_info=user_info,
         access_token=access_token,
         refresh_token=refresh_token,
+        is_new_user=is_new_user,
     )
 
 
