@@ -3,7 +3,7 @@ import json
 import redis
 import fakeredis
 from contextlib import contextmanager
-from typing import Iterator, Any
+from typing import Any, Iterator
 from os import getenv
 from common.config import IS_TEST
 
