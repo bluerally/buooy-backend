@@ -153,13 +153,19 @@ async def social_auth_callback(
             await user.save()
 
     # uid 생성(인증한 유저 확인용)
-    r = RedisManager()
-    user_identify_uuid = str(uuid.uuid4())
-    cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_identify_uuid)
-    r.set_value(cache_key, user.id)
-    return RedirectResponse(
-        url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
-    )
+    try:
+        r = RedisManager()
+        user_identify_uuid = str(uuid.uuid4())
+        cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_identify_uuid)
+        r.set_value(cache_key, user.id)
+        return RedirectResponse(
+            url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
+        )
+    except Exception as e:
+        logging.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @user_router.post(

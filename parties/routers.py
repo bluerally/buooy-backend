@@ -1,8 +1,8 @@
 from typing import List
-from typing import Optional
+from typing import Optional, Any
 
-from fastapi import APIRouter, status, Depends, Request
-from fastapi import HTTPException
+from fastapi import APIRouter, status, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse
 
 from common.dependencies import get_current_user
 from common.dtos import BaseResponse
@@ -29,23 +29,18 @@ party_router = APIRouter(
 
 @party_router.get(
     "/sports",
-    response_model=BaseResponse[List[SportName_Pydantic]],
+    response_model=List[SportName_Pydantic],
     status_code=status.HTTP_200_OK,
 )
-async def get_sports_list(request: Request) -> BaseResponse:
+async def get_sports_list(request: Request) -> Any:
     sports_list = await SportName_Pydantic.from_queryset(Sport.all())
-    return BaseResponse(
-        message="Sports list successfully retrieved",
-        data=sports_list,
-    )
+    return sports_list
 
 
-@party_router.post(
-    "/", response_model=BaseResponse, status_code=status.HTTP_201_CREATED
-)
+@party_router.post("/", response_model=None, status_code=status.HTTP_201_CREATED)
 async def create_party(
     request_data: PartyCreateRequest, user: User = Depends(get_current_user)
-) -> BaseResponse:
+) -> JSONResponse:
     party = await Party.create(
         title=request_data.title,
         body=request_data.body,
@@ -63,25 +58,25 @@ async def create_party(
     )
 
     # 생성된 파티 정보를 응답
-    return BaseResponse(
-        message="Party created successfully",
-        data={"party_id": party.id},
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED, content={"party_id": party.id}
     )
 
 
 @party_router.post(
     "/{party_id}/participate",
-    response_model=BaseResponse,
+    response_model=None,
     status_code=status.HTTP_201_CREATED,
 )
 async def participate_in_party(
     party_id: int, user: User = Depends(get_current_user)
-) -> BaseResponse:
+) -> JSONResponse:
     service = await PartyParticipateService.create(party_id, user)
     try:
         await service.participate()
-        return BaseResponse(
-            message="Participation requested successfully.",
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={"Participation requested successfully."},
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
