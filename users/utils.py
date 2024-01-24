@@ -1,4 +1,5 @@
 import json
+import logging
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Union, Any
@@ -11,6 +12,7 @@ from jose.utils import base64url_decode
 
 from common.config import SECRET_KEY, ALGORITHM
 from users.models import UserToken, User
+from datetime import UTC
 
 
 def create_access_token(
@@ -80,17 +82,22 @@ async def validate_kakao_id_token(
         decoded_header = base64url_decode(header)
         header_data = json.loads(decoded_header)
 
-        # decoded_payload = base64url_decode(payload)
-        # payload_data = json.loads(decoded_payload)
+        # Payload 에러가 나지 않을때만 유효성 검사
+        try:
+            decoded_payload = base64url_decode(payload)
+            payload_data = json.loads(decoded_payload)
 
-        # if payload_data.get("iss") != "https://kauth.kakao.com":
-        #     return decoded_id_token
-        # if payload_data.get("aud") != client_id:
-        #     return decoded_id_token
-        # if payload_data.get("exp") < datetime.now(UTC).timestamp():
-        #     return decoded_id_token
-        # if payload_data.get("nonce") != session_nonce:
-        #     return decoded_id_token
+            if payload_data.get("iss") != "https://kauth.kakao.com":
+                return decoded_id_token
+            if payload_data.get("aud") != client_id:
+                return decoded_id_token
+            if payload_data.get("exp") < datetime.now(UTC).timestamp():
+                return decoded_id_token
+            if payload_data.get("nonce") != session_nonce:
+                return decoded_id_token
+        except Exception as e:
+            logging.error(f"Payload processing error: {e}")
+            pass
 
         async with httpx.AsyncClient() as client:
             jwks_response = await client.get(
@@ -112,5 +119,3 @@ async def validate_kakao_id_token(
         return decoded_id_token
     except jwt.JWTError:
         return decoded_id_token
-    except Exception:
-        raise ValueError(f"[kakao id token validation error] header:{header_data}")
