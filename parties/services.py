@@ -192,6 +192,8 @@ class PartyListService:
         gather_date_min: Optional[str] = None,
         gather_date_max: Optional[str] = None,
         search_query: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 8,
     ) -> List[PartyListDetail]:
         try:
             query = Q()
@@ -219,10 +221,17 @@ class PartyListService:
                 )
                 # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
 
+            # 페이징 계산
+
+            offset = (page - 1) * page_size
+            limit = page_size
+
             parties = (
                 await Party.filter(query)
                 .select_related("sport", "organizer_user")
                 .prefetch_related("participants")
+                .offset(offset)
+                .limit(limit)
             )
             party_list = [await self._build_party_response(party) for party in parties]
         except Exception as e:

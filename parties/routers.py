@@ -145,6 +145,7 @@ async def get_party_list(
     gather_date_min: Optional[str] = None,
     gather_date_max: Optional[str] = None,
     search_query: Optional[str] = None,
+    page: int = 1,
 ) -> List[PartyListDetail]:
     user = request.state.user
     service = PartyListService(user)
@@ -154,6 +155,7 @@ async def get_party_list(
         gather_date_min=gather_date_min,
         gather_date_max=gather_date_max,
         search_query=search_query,
+        page=page,
     )
     return party_list
 
