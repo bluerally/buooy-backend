@@ -24,7 +24,7 @@ async def test_get_social_login_redirect_url(client: AsyncClient) -> None:
         "access_type": "offline",
     }
     _redirect_url = f"{GoogleAuth.AUTHORIZATION_URL}?{urlencode(query_params)}"
-    assert response.json()["data"]["redirect_url"] == _redirect_url
+    assert response.json()["redirect_url"] == _redirect_url
 
 
 MOCKED_GOOGLE_USER_INFO = {
