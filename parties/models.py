@@ -22,6 +22,7 @@ class Party(BaseModel):
         "models.Sport", related_name="parties", null=True, on_delete=fields.SET_NULL
     )
     is_active = fields.BooleanField(null=True, default=True)
+    contact = fields.CharField(max_length=255, null=True, blank=True)
     participants = fields.ManyToManyField(
         "models.User",
         related_name="participated_parties",

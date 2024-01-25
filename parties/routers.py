@@ -5,7 +5,12 @@ from fastapi import APIRouter, status, Depends, Request, HTTPException
 
 from common.dependencies import get_current_user
 from common.utils import convert_string_to_datetime
-from parties.dtos import PartyListDetail, PartyDetail, PartyCommentDetail
+from parties.dtos import (
+    PartyListDetail,
+    PartyDetail,
+    PartyCommentDetail,
+    PartyUpdateInfo,
+)
 from parties.models import Party
 from parties.services import PartyDetailService, PartyListService, PartyCommentService
 from parties.services import PartyParticipateService
@@ -15,9 +20,10 @@ from parties.dto.response import (
     PartyCreateResponse,
 )
 from parties.dto.request import (
-    PartyCreateRequest,
+    PartyDetailRequest,
     RefreshTokenRequest,
     PartyCommentPostRequest,
+    PartyUpdateRequest,
 )
 
 party_router = APIRouter(
@@ -39,7 +45,7 @@ async def get_sports_list(request: Request) -> Any:
     "/", response_model=PartyCreateResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_party(
-    request_data: PartyCreateRequest, user: User = Depends(get_current_user)
+    request_data: PartyDetailRequest, user: User = Depends(get_current_user)
 ) -> PartyCreateResponse:
     party = await Party.create(
         title=request_data.title,
@@ -55,10 +61,27 @@ async def create_party(
         participant_cost=request_data.participant_cost,
         sport_id=request_data.sport_id,
         organizer_user=user,
+        contact=request_data.contact,
     )
 
     # 생성된 파티 정보를 응답
     return PartyCreateResponse(party_id=party.id)
+
+
+@party_router.post(
+    "/{party_id}", response_model=PartyUpdateInfo, status_code=status.HTTP_200_OK
+)
+async def update_party(
+    body: PartyUpdateRequest, party_id: int, user: User = Depends(get_current_user)
+) -> PartyUpdateInfo:
+    try:
+        service = await PartyDetailService.create(party_id=party_id)
+        party_info = await service.update_party(user, body)
+        return party_info
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @party_router.post(
@@ -190,7 +213,7 @@ async def post_party_comment(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     return posted_comment
 
 

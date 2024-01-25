@@ -8,16 +8,18 @@ from parties.dtos import (
     PartyDetail,
     PartyListDetail,
     PartyCommentDetail,
+    PartyUpdateInfo,
 )
 from users.dtos import UserSimpleProfile
 from common.constants import (
     FORMAT_HH_MM,
     FORMAT_YYYY_MM_DD,
-    FORMAT_YYYY_MM_DD_T_HH_MM_SS,
+    FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ,
 )
 from typing import List, Optional, Union
 from tortoise.expressions import Q
 from fastapi import HTTPException, status
+from parties.dto.request import PartyUpdateRequest
 
 
 class PartyParticipateService:
@@ -129,31 +131,34 @@ class PartyDetailService:
             .all()
         )
 
-        approved_participants = [
-            ParticipantProfile(
-                profile_picture=p.participant_user.profile_image,
-                name=p.participant_user.name,
-                user_id=p.participant_user_id,
-                participation_id=p.id,
-            )
-            for p in participants
-            if p.status == ParticipationStatus.APPROVED
-        ]
-
-        pending_participants = [
-            ParticipantProfile(
-                profile_picture=p.participant_user.profile_image,
-                name=p.participant_user.name,
-                user_id=p.participant_user_id,
-                participation_id=p.id,
-                # application_date=p.created_at.strftime(FORMAT_YYYY_d_MM_d_DD)
-            )
-            for p in participants
-            if p.status == ParticipationStatus.PENDING
-        ]
+        approved_participants = []
+        pending_participants = []
+        participants_id_list = []
+        for participant in participants:
+            if participant.status == ParticipationStatus.PENDING:
+                pending_participants.append(
+                    ParticipantProfile(
+                        profile_picture=participant.participant_user.profile_image,
+                        name=participant.participant_user.name,
+                        user_id=participant.participant_user_id,
+                        participation_id=participant.id,
+                        # application_date=p.created_at.strftime(FORMAT_YYYY_d_MM_d_DD)
+                    )
+                )
+            if participant.status == ParticipationStatus.APPROVED:
+                approved_participants.append(
+                    ParticipantProfile(
+                        profile_picture=participant.participant_user.profile_image,
+                        name=participant.participant_user.name,
+                        user_id=participant.participant_user_id,
+                        participation_id=participant.id,
+                    )
+                )
+                participants_id_list.append(participant.participant_user.id)
 
         participants_info = (
-            f"{len(approved_participants)}/{self.party.participant_limit}"
+            # 파티장 포함
+            f"{len(approved_participants) + 1}/{self.party.participant_limit}"
         )
 
         return PartyDetail(
@@ -163,7 +168,7 @@ class PartyDetailService:
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=participants_info,
-            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(
@@ -171,12 +176,61 @@ class PartyDetailService:
                 name=self.party.organizer_user.name,
                 user_id=self.party.organizer_user_id,
             ),
-            posted_date=self.party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            posted_date=self.party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             is_user_organizer=user.id == self.party.organizer_user_id
             if user
             else False,
             pending_participants=pending_participants,
             approved_participants=approved_participants,
+            is_active=self.party.is_active,
+            contract=self.party.contact
+            if user
+            and (
+                user.id in participants_id_list
+                or user.id == self.party.organizer_user_id
+            )
+            else None,
+        )
+
+    async def update_party(
+        self, user: User, update_info: PartyUpdateRequest
+    ) -> PartyUpdateInfo:
+        if self.party.organizer_user_id != user.id:
+            raise PermissionError("user(user.id) is not party organizer")
+
+        # 각 필드를 업데이트
+        for field, value in update_info.__dict__.items():
+            if value is not None and hasattr(self.party, field):
+                if field in ("gather_at", "due_at"):
+                    try:
+                        value = datetime.strptime(
+                            value, FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+                        )
+                    except Exception as e:
+                        raise ValueError(
+                            f"field: {field}, format is in valid({FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ}), error: {e}"
+                        )
+                setattr(self.party, field, value)
+
+        # 업데이트된 내용 저장
+        await self.party.save()
+        return PartyUpdateInfo(
+            id=self.party.id,
+            updated_at=self.party.updated_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            sport_name=self.party.sport.name,
+            title=self.party.title,
+            gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
+            gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
+            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            price=self.party.participant_cost,
+            body=self.party.body,
+            organizer_profile=UserSimpleProfile(
+                profile_picture=self.party.organizer_user.profile_image,
+                name=self.party.organizer_user.name,
+                user_id=self.party.organizer_user_id,
+            ),
+            posted_date=self.party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            contract=self.party.contact,
             is_active=self.party.is_active,
         )
 
@@ -249,7 +303,7 @@ class PartyListService:
             gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=f"{approved_participants}/{party.participant_limit}",
-            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=party.participant_cost,
             body=party.body,
             organizer_profile=UserSimpleProfile(
@@ -257,7 +311,7 @@ class PartyListService:
                 name=party.organizer_user.name,
                 user_id=party.organizer_user_id,
             ),
-            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             is_user_organizer=self.user.id == party.organizer_user_id
             if self.user
             else False,
@@ -287,7 +341,7 @@ class PartyCommentService:
                 name=comment.commenter.name,
                 profile_picture=comment.commenter.profile_image,
             ),
-            posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+            posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             content=comment.content,
             is_writer=comment.commenter.id == self.user.id if self.user else False,
         )
@@ -306,7 +360,9 @@ class PartyCommentService:
                     name=comment.commenter.name,
                     profile_picture=comment.commenter.profile_image,
                 ),
-                posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+                posted_date=comment.created_at.strftime(
+                    FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+                ),
                 content=comment.content,
             )
         except Exception as e:
@@ -357,7 +413,9 @@ class PartyCommentService:
                     name=comment.commenter.name,
                     profile_picture=comment.commenter.profile_image,
                 ),
-                posted_date=comment.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS),
+                posted_date=comment.created_at.strftime(
+                    FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+                ),
                 content=comment.content,
             )
         except Exception as e:

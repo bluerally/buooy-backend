@@ -6,6 +6,7 @@ from common.dependencies import get_current_user
 from users.models import User, Sport
 from datetime import datetime, UTC, timedelta
 from parties.models import Party, PartyParticipant, ParticipationStatus, PartyComment
+from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
 
 
 @pytest.mark.asyncio
@@ -43,6 +44,49 @@ async def test_success_party_create(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == status.HTTP_201_CREATED
     assert Party.get_or_none(title=request_data["title"]) is not None
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_success_party_update(client: AsyncClient) -> None:
+    user = await User.create(
+        email="partyorg6@gmail.com",
+        sns_id="some_sns_id",
+        name="Party Organizer User",
+        profile_image="https://path/to/image",
+    )
+    sport = await Sport.create(name="프리다이빙")
+
+    party = await Party.create(
+        title="Freediving Party",
+        body="Freediving Party body",
+        organizer_user=user,
+        gather_at=datetime.now(UTC) + timedelta(days=2),
+        due_at=datetime.now(UTC) + timedelta(days=1),
+        participant_limit=5,
+        participant_cost=200,
+        sport=sport,
+        contract="audwls624",
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    request_data = {
+        "gather_at": "2024-02-03T08:30:00+09:00",
+    }
+    # API 호출
+    response = await client.post(f"/api/party/{party.id}", json=request_data)
+    updated_party = await Party.get_or_none(id=party.id)
+    # 응답 검증
+    assert response.status_code == status.HTTP_200_OK
+    assert updated_party.gather_at == datetime.strptime(
+        request_data["gather_at"], FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+    )
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()
@@ -201,7 +245,7 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == 200
     assert response_data["sport_name"] == "Freediving"
-    assert response_data["participants_info"] == "3/10"
+    assert response_data["participants_info"] == "4/10"
     assert response_data["organizer_profile"]["name"] == "Organizer User"
     assert len(response_data["approved_participants"]) == 3
     assert len(response_data["pending_participants"]) == 2
