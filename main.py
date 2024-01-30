@@ -6,11 +6,10 @@ from fastapi import FastAPI, Depends
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import HTMLResponse
 from tortoise import Tortoise
 
-from common.config import TORTOISE_ORM, SECRET_KEY
+from common.config import TORTOISE_ORM
 from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware
 from parties.routers import party_router
@@ -47,15 +46,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuthMiddleware)
-# app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    session_cookie="session",
-    max_age=1800,
-    same_site="none",
-    https_only=True,
-)
 
 # router include
 app.include_router(user_router)
