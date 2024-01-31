@@ -217,7 +217,7 @@ async def post_party_comment(
     return posted_comment
 
 
-@party_router.post(
+@party_router.put(
     "/{party_id}/comment/{comment_id}",
     response_model=PartyCommentDetail,
     status_code=status.HTTP_200_OK,
@@ -235,7 +235,7 @@ async def change_party_comment(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     return updated_comment
 
 
@@ -256,4 +256,4 @@ async def delete_party_comment(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
