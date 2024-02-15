@@ -71,3 +71,13 @@ class PartyComment(BaseModel):
 
     class Meta:
         table = "party_comments"
+
+
+class PartyLike(BaseModel):
+    user = fields.ForeignKeyField("models.User", null=True, on_delete=fields.SET_NULL)
+    party = fields.ForeignKeyField(
+        "models.Party", null=True, on_delete=fields.SET_NULL, related_name="likes"
+    )
+
+    class Meta:
+        table = "party_likes"

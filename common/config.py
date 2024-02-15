@@ -19,7 +19,9 @@ IS_TEST = APP_ENV == APP_ENV_TEST
 
 LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
 
+# MODELS_PATH = ["users.models", "parties.models", "aerich.models", "notifications.models"]
 MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
+
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
 # if IS_PRODUCTION:
 DB_CONNECTION: Union[str, Dict[str, Any]]
@@ -93,5 +95,5 @@ async def db_init() -> None:
     await Tortoise.init(
         config=TORTOISE_ORM,
         timezone="Asia/Seoul",
-        modules={"models": ["users.models", "aerich.models", "parties.models"]},
+        modules={"models": MODELS_PATH},
     )

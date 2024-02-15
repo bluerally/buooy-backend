@@ -12,7 +12,12 @@ from parties.dtos import (
     PartyUpdateInfo,
 )
 from parties.models import Party
-from parties.services import PartyDetailService, PartyListService, PartyCommentService
+from parties.services import (
+    PartyDetailService,
+    PartyListService,
+    PartyCommentService,
+    PartyLikeService,
+)
 from parties.services import PartyParticipateService
 from users.models import User, Sport, SportName_Pydantic
 from parties.dto.response import (
@@ -144,6 +149,10 @@ async def organizer_change_participation_status(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @party_router.get(
@@ -257,3 +266,20 @@ async def delete_party_comment(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+@party_router.post(
+    "/{party_id}/like",
+    response_model=None,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_liked_party(
+    party_id: int,
+    user: User = Depends(get_current_user),
+) -> str:
+    service = PartyLikeService(user)
+    try:
+        await service.party_like(party_id)
+        return f"Party-{party_id} added to liked list"
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

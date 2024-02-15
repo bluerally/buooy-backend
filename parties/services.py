@@ -1,6 +1,12 @@
 import logging
 
-from parties.models import Party, PartyParticipant, ParticipationStatus, PartyComment
+from parties.models import (
+    Party,
+    PartyParticipant,
+    ParticipationStatus,
+    PartyComment,
+    PartyLike,
+)
 from users.models import User
 from datetime import datetime, UTC
 from parties.dtos import (
@@ -49,7 +55,11 @@ class PartyParticipateService:
         existing_participation = await PartyParticipant.get_or_none(
             participant_user=self.user, party=self.party
         )
-        if existing_participation:
+        # TODO 취소된 신청인 경우 재신청 가능하게 만들 것
+        if (
+            existing_participation
+            and existing_participation.status == ParticipationStatus.PENDING
+        ):
             raise ValueError("Already applied to the party.")
 
         await PartyParticipant.create(
@@ -423,3 +433,51 @@ class PartyCommentService:
                 f"[Party Comment Error]: (CHANGE) party_id:{self.party_id}, comment_id:{comment_id}, msg:{e}"
             )
             raise ValueError(f"Party comment change error - comment_id:{comment_id}")
+
+
+class PartyLikeService:
+    def __init__(self, user: User):
+        self.user = user
+
+    async def party_like(self, party_id: int) -> None:
+        party_exists = await Party.exists(id=party_id)
+        is_liked_party = await PartyLike.exists(user=self.user, party_id=party_id)
+        if not party_exists:
+            raise ValueError(f"Party-{party_id} is does not exists")
+        if is_liked_party:
+            raise ValueError(f"Party-{party_id} is already liked")
+        await PartyLike.create(user=self.user, party_id=party_id)
+
+    async def _build_party_info(self, party: Party) -> PartyListDetail:
+        approved_participants = await PartyParticipant.filter(
+            party=party, status=ParticipationStatus.APPROVED
+        ).count()  # TODO 추후 캐시로 처리
+        return PartyListDetail(
+            id=party.id,
+            sport_name=party.sport.name,
+            title=party.title,
+            gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
+            gather_time=party.gather_at.strftime(FORMAT_HH_MM),
+            participants_info=f"{approved_participants}/{party.participant_limit}",
+            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            price=party.participant_cost,
+            body=party.body,
+            organizer_profile=UserSimpleProfile(
+                profile_picture=party.organizer_user.profile_image,
+                name=party.organizer_user.name,
+                user_id=party.organizer_user_id,
+            ),
+            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            is_user_organizer=False,
+            is_active=party.is_active,
+        )
+
+    async def get_liked_parties(self) -> List[PartyListDetail]:
+        liked_parties = await PartyLike.filter(user=self.user).select_related(
+            "party", "party__organizer_user", "party__sport"
+        )
+        liked_party_info_list = [
+            await self._build_party_info(liked_party.party)
+            for liked_party in liked_parties
+        ]
+        return liked_party_info_list

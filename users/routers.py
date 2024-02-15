@@ -38,6 +38,8 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
+from parties.dtos import PartyListDetail
+from parties.services import PartyLikeService
 
 user_router = APIRouter(
     prefix="/api/user",
@@ -256,3 +258,27 @@ async def get_certificate_levels(certificate_id: int) -> Any:
         CertificateLevel.filter(certificate_id=certificate_id)
     )
     return levels
+
+
+@user_router.get(
+    "/party/likes",
+    response_model=List[PartyListDetail],
+    status_code=status.HTTP_200_OK,
+)
+async def get_liked_parties(
+    user: User = Depends(get_current_user),
+) -> List[PartyListDetail]:
+    service = PartyLikeService(user)
+    try:
+        return await service.get_liked_parties()
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# @user_router.get("/me", response_model=None, status_code=status.HTTP_200_OK)
+# async def get_self_profile(user: User = Depends(get_current_user)) -> Any:
+#
+#
+# @user_router.get("/test/list", response_model=None, status_code=status.HTTP_200_OK)
+# async def test_user_list() -> Any:
+#     return User.all()
