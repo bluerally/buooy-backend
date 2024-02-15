@@ -392,7 +392,7 @@ async def test_change_party_comment_success(client: AsyncClient) -> None:
 
     app.dependency_overrides[get_current_user] = lambda: user
 
-    response = await client.post(
+    response = await client.put(
         f"/api/party/{party.id}/comment/{comment.id}",
         json={"content": new_comment_content},
     )

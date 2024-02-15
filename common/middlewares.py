@@ -27,6 +27,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     status_code=403, detail=f"Could not validate credentials, msg-{e}"
                 )
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=403, detail=str(e))
         response = await call_next(request)
         return response
