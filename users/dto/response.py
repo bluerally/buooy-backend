@@ -1,4 +1,4 @@
-from users.dtos import LoginResponseData
+from users.dtos import LoginResponseData, SportInfo
 from pydantic import BaseModel
 from typing import List
 
@@ -12,4 +12,4 @@ class SelfProfileResponse(BaseModel):
     name: str
     email: str
     introduction: str
-    interested_sports: List[str]
+    interested_sports: List[SportInfo]

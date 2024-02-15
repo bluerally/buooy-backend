@@ -55,3 +55,8 @@ class RefreshTokenRequest(BaseModel):
 
 class AccessTokenRequest(BaseModel):
     user_uid: str
+
+
+class SportInfo(BaseModel):
+    id: int
+    name: str

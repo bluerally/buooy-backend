@@ -24,7 +24,7 @@ from users.dtos import (
     RefreshTokenRequest,
     AccessTokenRequest,
 )
-from users.dto.response import AccessTokenResponse
+from users.dto.response import AccessTokenResponse, SelfProfileResponse
 from users.models import (
     CertificateLevel,
     Certificate,
@@ -38,6 +38,7 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
+from users.services import SelfProfileService
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 
@@ -261,7 +262,7 @@ async def get_certificate_levels(certificate_id: int) -> Any:
 
 
 @user_router.get(
-    "/party/likes",
+    "/party/like",
     response_model=List[PartyListDetail],
     status_code=status.HTTP_200_OK,
 )
@@ -275,10 +276,11 @@ async def get_liked_parties(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-# @user_router.get("/me", response_model=None, status_code=status.HTTP_200_OK)
-# async def get_self_profile(user: User = Depends(get_current_user)) -> Any:
-#
-#
-# @user_router.get("/test/list", response_model=None, status_code=status.HTTP_200_OK)
-# async def test_user_list() -> Any:
-#     return User.all()
+@user_router.get(
+    "/me", response_model=SelfProfileResponse, status_code=status.HTTP_200_OK
+)
+async def get_self_profile(
+    user: User = Depends(get_current_user)
+) -> SelfProfileResponse:
+    service = SelfProfileService(user)
+    return await service.get_profile()

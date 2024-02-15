@@ -5,7 +5,13 @@ from starlette import status
 from common.dependencies import get_current_user
 from users.models import User, Sport
 from datetime import datetime, UTC, timedelta
-from parties.models import Party, PartyParticipant, ParticipationStatus, PartyComment
+from parties.models import (
+    Party,
+    PartyParticipant,
+    ParticipationStatus,
+    PartyComment,
+    PartyLike,
+)
 from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
 
 
@@ -428,5 +434,73 @@ async def test_delete_party_comment_success(client: AsyncClient) -> None:
     deleted_comment = await PartyComment.get_or_none(id=comment.id)
     assert response.status_code == status.HTTP_200_OK
     assert deleted_comment.is_deleted is True
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_post_party_like_success(client: AsyncClient) -> None:
+    organizer = await User.create(
+        email="organizer@example.com",
+        sns_id="organizer",
+        name="organizer",
+        profile_image="https://path/to/image",
+    )
+
+    user = await User.create(
+        email="liker@example.com",
+        sns_id="liker",
+        name="liker",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=organizer,
+    )
+
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    response = await client.post(f"/api/party/like/{party.id}")
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert await PartyLike.filter(user=user, party=party).exists()
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_post_party_like_cancel_success(client: AsyncClient) -> None:
+    organizer = await User.create(
+        email="organizer@example.com",
+        sns_id="organizer",
+        name="organizer",
+        profile_image="https://path/to/image",
+    )
+
+    user = await User.create(
+        email="liker@example.com",
+        sns_id="liker",
+        name="liker",
+        profile_image="https://path/to/image",
+    )
+    party = await Party.create(
+        title="Test Party",
+        body="Test Party Body",
+        organizer_user=organizer,
+    )
+
+    await PartyLike.create(user=user, party=party)
+
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    response = await client.delete(f"/api/party/like/{party.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert not await PartyLike.filter(user=user, party=party).exists()
 
     app.dependency_overrides.clear()

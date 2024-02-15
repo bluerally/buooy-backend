@@ -448,6 +448,15 @@ class PartyLikeService:
             raise ValueError(f"Party-{party_id} is already liked")
         await PartyLike.create(user=self.user, party_id=party_id)
 
+    async def cancel_party_like(self, party_id: int) -> None:
+        party_exists = await Party.exists(id=party_id)
+        liked_party = await PartyLike.get_or_none(user=self.user, party_id=party_id)
+        if not party_exists:
+            raise ValueError(f"Party-{party_id} is does not exists")
+        if not liked_party:
+            raise ValueError(f"Party-{party_id} is already liked")
+        await liked_party.delete()
+
     async def _build_party_info(self, party: Party) -> PartyListDetail:
         approved_participants = await PartyParticipant.filter(
             party=party, status=ParticipationStatus.APPROVED

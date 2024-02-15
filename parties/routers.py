@@ -269,7 +269,7 @@ async def delete_party_comment(
 
 
 @party_router.post(
-    "/{party_id}/like",
+    "/like/{party_id}",
     response_model=None,
     status_code=status.HTTP_201_CREATED,
 )
@@ -281,5 +281,22 @@ async def add_liked_party(
     try:
         await service.party_like(party_id)
         return f"Party-{party_id} added to liked list"
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@party_router.delete(
+    "/like/{party_id}",
+    response_model=None,
+    status_code=status.HTTP_200_OK,
+)
+async def cancel_liked_party(
+    party_id: int,
+    user: User = Depends(get_current_user),
+) -> str:
+    service = PartyLikeService(user)
+    try:
+        await service.cancel_party_like(party_id)
+        return f"Party-{party_id} like canceled"
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

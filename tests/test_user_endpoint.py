@@ -9,7 +9,8 @@ from starlette import status
 
 from common.dependencies import get_current_user
 from users.auth import GoogleAuth
-from users.models import User, UserToken
+from users.models import User, UserToken, Sport, UserInterestedSport
+from parties.models import Party, PartyLike
 
 
 @pytest.mark.asyncio
@@ -132,6 +133,90 @@ async def test_success_logout(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == 200
     assert await UserToken.get_or_none(user=user, is_active=True) is None
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_success_get_liked_parties(client: AsyncClient) -> None:
+    sport = await Sport.create(name="Sport")
+    user = await User.create(
+        email="fakeemail2@gmail.com",
+        sns_id="sns_id",
+        name="Test User",
+        profile_image="https://path/to/image",
+    )
+    organizer = await User.create(
+        email="organizer@gmail.com",
+        sns_id="organizer_sns_id",
+        name="Test organizer",
+        profile_image="https://path/to/image",
+    )
+    party_1 = await Party.create(
+        title="Test Party",
+        created_at=datetime.now(),
+        due_at=datetime.now() + timedelta(days=3),
+        gather_at=datetime.now() + timedelta(days=2),
+        body="Test Party Body",
+        organizer_user=organizer,
+        sport=sport,
+    )
+    party_2 = await Party.create(
+        title="Test Party2",
+        body="Test Party Body",
+        created_at=datetime.now(),
+        due_at=datetime.now() + timedelta(days=3),
+        gather_at=datetime.now() + timedelta(days=2),
+        organizer_user=organizer,
+        sport=sport,
+    )
+    await PartyLike.create(user=user, party=party_1)
+    await PartyLike.create(user=user, party=party_2)
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # API 호출
+    response = await client.get("/api/user/party/like")
+    response_json = response.json()
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert len(response_json) == 2
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_success_get_self_profile(client: AsyncClient) -> None:
+    sport_1 = await Sport.create(name="Sport1")
+    sport_2 = await Sport.create(name="Sport2")
+    sport_3 = await Sport.create(name="Sport3")
+    user = await User.create(
+        email="fakeemail2@gmail.com",
+        sns_id="sns_id",
+        name="Test User",
+        introduction="안녕하세요",
+        profile_image="https://path/to/image",
+    )
+    await UserInterestedSport.create(user=user, sport=sport_1)
+    await UserInterestedSport.create(user=user, sport=sport_2)
+    await UserInterestedSport.create(user=user, sport=sport_3)
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # API 호출
+    response = await client.get("/api/user/me")
+
+    # 응답 검증
+    assert response.status_code == 200
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()
