@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, AsyncMock
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
-
+import io
 import pytest
 from httpx import AsyncClient
 from starlette import status
@@ -11,6 +11,10 @@ from common.dependencies import get_current_user
 from users.auth import GoogleAuth
 from users.models import User, UserToken, Sport, UserInterestedSport
 from parties.models import Party, PartyLike
+
+# from common.config import AWS_S3_URL
+from pytest import MonkeyPatch
+from typing import Callable, Any, Coroutine
 
 
 @pytest.mark.asyncio
@@ -217,6 +221,64 @@ async def test_success_get_self_profile(client: AsyncClient) -> None:
 
     # 응답 검증
     assert response.status_code == 200
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_s3_upload(monkeypatch: MonkeyPatch) -> Callable[[], Coroutine[Any, Any, str]]:
+    async def mock_upload_file(*args: Any, **kwargs: Any) -> str:
+        return "user1/profile-image/fakeimage.jpg"
+
+    monkeypatch.setattr("users.services.s3_upload_file", mock_upload_file)
+    return mock_upload_file
+
+
+@pytest.mark.asyncio
+async def test_update_self_profile(
+    client: AsyncClient, mock_s3_upload: AsyncMock
+) -> None:
+    # 유저와 관심 스포츠 생성
+    user = await User.create(
+        email="user@example.com",
+        name="Test User",
+        profile_image="user/1/original.jpg",
+    )
+    sport_1 = await Sport.create(name="Freediving")
+    sport_2 = await Sport.create(name="Surfing")
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    fake_image = io.BytesIO(b"test image")
+    fake_image.seek(0)
+    files = {
+        "profile_image": ("mock_image.jpg", fake_image, "image/jpeg"),
+    }
+
+    # 업데이트할 프로필 정보
+    profile_data = {
+        "name": "Updated Name",
+        "introduction": "Updated introduction",
+        "interested_sports_ids": f"{sport_1.id},{sport_2.id}",
+    }
+
+    # API 호출
+    response = await client.post("/api/user/me", data=profile_data, files=files)
+
+    # 응답 검증
+    assert response.status_code == status.HTTP_201_CREATED
+
+    updated_user = await User.get(id=user.id)
+    assert updated_user.name == "Updated Name"
+    assert (
+        updated_user.profile_image == "user1/proflie-image/fakeimage.jpg"
+    )  # Mock에서 반환된 URL
+    interested_sports = await UserInterestedSport.filter(user=user).all()
+    assert len(interested_sports) == 2
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()

@@ -1,7 +1,12 @@
+import os
+from typing import Optional
 from users.models import User
 from users.dto.response import SelfProfileResponse
-from users.models import UserInterestedSport
+from users.models import UserInterestedSport, Sport
 from users.dtos import SportInfo
+from fastapi import UploadFile
+from common.utils import s3_upload_file
+from common.config import AWS_S3_URL
 
 
 class SelfProfileService:
@@ -19,6 +24,7 @@ class SelfProfileService:
             name=self.user.name,
             email=self.user.email,
             introduction=self.user.introduction,
+            profile_image=os.path.join(AWS_S3_URL, self.user.profile_image),
             interested_sports=[
                 SportInfo(
                     id=interested_sport.sport_id, name=interested_sport.sport.name
@@ -26,3 +32,35 @@ class SelfProfileService:
                 for interested_sport in interested_sports
             ],
         )
+
+    async def update_profile(
+        self,
+        name: Optional[str] = None,
+        email: Optional[str] = None,
+        introduction: Optional[str] = None,
+        interested_sports_ids: Optional[str] = None,
+        profile_image: Optional[UploadFile] = None,
+    ) -> SelfProfileResponse:
+        if name is not None:
+            self.user.name = name
+        if email is not None:
+            self.user.email = email
+        if introduction is not None:
+            self.user.introduction = introduction
+
+        if interested_sports_ids is not None:
+            await UserInterestedSport.filter(user=self.user).delete()
+            for sport_id in interested_sports_ids.split(","):
+                sport = await Sport.get(id=int(sport_id))
+                await UserInterestedSport.create(user=self.user, sport=sport)
+
+        if profile_image:
+            folder = f"user/{self.user.id}/profile_image"
+            image_url = await s3_upload_file(folder, profile_image)
+
+            if image_url:
+                self.user.profile_image = image_url
+
+        await self.user.save()
+
+        return await self.get_profile()

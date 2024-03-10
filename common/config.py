@@ -19,6 +19,13 @@ IS_TEST = APP_ENV == APP_ENV_TEST
 
 LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
 
+# S3
+S3_BUCKET = "blue-rally"
+AWS_REGION = "ap-northeast-2"
+AWS_S3_URL = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com"
+AWS_S3_ACCESS_KEY = getenv("S3_ACCESS_KEY", default="")
+AWS_S3_SECRET_KEY = getenv("S3_SECRET_KEY", default="")
+
 # MODELS_PATH = ["users.models", "parties.models", "aerich.models", "notifications.models"]
 MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
 
@@ -66,7 +73,7 @@ LOGGING_CONFIG = {
             "level": "INFO",
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "standard",
-            "filename": "logs/info.log",
+            "filename": str(BASE_DIR / "logs/info.log"),
             "maxBytes": 1048576,  # 1MB
             "backupCount": 5,
         },
@@ -74,7 +81,7 @@ LOGGING_CONFIG = {
             "level": "ERROR",
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "standard",
-            "filename": "logs/error.log",
+            "filename": str(BASE_DIR / "logs/error.log"),
             "maxBytes": 1048576,  # 1MB
             "backupCount": 5,
         },

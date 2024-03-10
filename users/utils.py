@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from jose import jwt, jwk
 from jose.utils import base64url_decode
 
-from common.config import SECRET_KEY, ALGORITHM
 from users.models import UserToken, User
 from datetime import UTC
 
@@ -25,12 +24,17 @@ def create_access_token(
     else:
         expire = _now + timedelta(minutes=30)
     to_encode.update({"exp": expire})
+
+    from common.config import SECRET_KEY, ALGORITHM
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def verify_access_token(token: str) -> Union[Dict[str, Any], None]:
     try:
+        from common.config import SECRET_KEY, ALGORITHM
+
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return decoded_token if decoded_token else None
     except jwt.JWTError:

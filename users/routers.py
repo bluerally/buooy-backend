@@ -1,8 +1,9 @@
 import logging
 import uuid
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import Form, UploadFile
 from fastapi.responses import RedirectResponse
 
 from common.cache_constants import CACHE_KEY_LOGIN_REDIRECT_UUID
@@ -16,7 +17,10 @@ from common.constants import (
 )
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
+from parties.dtos import PartyListDetail
+from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
+from users.dto.response import AccessTokenResponse, SelfProfileResponse
 from users.dtos import (
     UserInfo,
     RedirectUrlInfo,
@@ -24,7 +28,6 @@ from users.dtos import (
     RefreshTokenRequest,
     AccessTokenRequest,
 )
-from users.dto.response import AccessTokenResponse, SelfProfileResponse
 from users.models import (
     CertificateLevel,
     Certificate,
@@ -33,14 +36,12 @@ from users.models import (
     CertificateLevel_Pydantic,
     UserToken,
 )
+from users.services import SelfProfileService
 from users.utils import (
     create_refresh_token,
     create_access_token,
     is_active_refresh_token,
 )
-from users.services import SelfProfileService
-from parties.dtos import PartyListDetail
-from parties.services import PartyLikeService
 
 user_router = APIRouter(
     prefix="/api/user",
@@ -284,3 +285,24 @@ async def get_self_profile(
 ) -> SelfProfileResponse:
     service = SelfProfileService(user)
     return await service.get_profile()
+
+
+@user_router.post(
+    "/me", response_model=SelfProfileResponse, status_code=status.HTTP_201_CREATED
+)
+async def update_self_profile(
+    name: Annotated[str | None, Form()] = None,
+    introduction: Annotated[str | None, Form()] = None,
+    interested_sports_ids: Annotated[str | None, Form()] = None,
+    profile_image: UploadFile | None = None,
+    user: User = Depends(get_current_user),
+) -> SelfProfileResponse:
+    service = SelfProfileService(user)
+
+    updated_profile = await service.update_profile(
+        name=name,
+        introduction=introduction,
+        interested_sports_ids=interested_sports_ids,
+        profile_image=profile_image,
+    )
+    return updated_profile
