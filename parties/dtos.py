@@ -36,12 +36,12 @@ class PartyDetail(PartyInfo):
     is_user_organizer: bool = False
     pending_participants: Optional[List[ParticipantProfile]] = None
     approved_participants: Optional[List[ParticipantProfile]] = None
-    contract: Optional[str] = None
+    notice: Optional[str] = None
 
 
 class PartyUpdateInfo(PartyInfo):
     updated_at: str
-    contract: Optional[str] = None
+    notice: Optional[str] = None
 
 
 class PartyCommentDetail(BaseModel):

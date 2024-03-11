@@ -275,7 +275,7 @@ async def test_update_self_profile(
     updated_user = await User.get(id=user.id)
     assert updated_user.name == "Updated Name"
     assert (
-        updated_user.profile_image == "user1/proflie-image/fakeimage.jpg"
+        updated_user.profile_image == "user1/profile-image/fakeimage.jpg"
     )  # Mock에서 반환된 URL
     interested_sports = await UserInterestedSport.filter(user=user).all()
     assert len(interested_sports) == 2

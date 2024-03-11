@@ -74,7 +74,7 @@ async def test_success_party_update(client: AsyncClient) -> None:
         participant_limit=5,
         participant_cost=200,
         sport=sport,
-        contract="audwls624",
+        notice="audwls624",
     )
 
     # 의존성 오버라이드 설정

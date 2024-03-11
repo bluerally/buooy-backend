@@ -16,7 +16,7 @@ class PartyDetailRequest(BaseModel):
     participant_limit: int = 2
     participant_cost: int = 0
     sport_id: int
-    contact: Optional[str] = None
+    notice: Optional[str] = None
 
 
 class PartyUpdateRequest(BaseModel):
@@ -32,7 +32,7 @@ class PartyUpdateRequest(BaseModel):
     participant_limit: Optional[int] = None
     participant_cost: Optional[int] = None
     sport_id: Optional[int] = None
-    contact: Optional[str] = None
+    notice: Optional[str] = None
 
 
 class RefreshTokenRequest(BaseModel):

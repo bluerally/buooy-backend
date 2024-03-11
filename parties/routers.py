@@ -66,7 +66,7 @@ async def create_party(
         participant_cost=request_data.participant_cost,
         sport_id=request_data.sport_id,
         organizer_user=user,
-        contact=request_data.contact,
+        notice=request_data.notice,
     )
 
     # 생성된 파티 정보를 응답

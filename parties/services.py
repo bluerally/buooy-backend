@@ -193,7 +193,7 @@ class PartyDetailService:
             pending_participants=pending_participants,
             approved_participants=approved_participants,
             is_active=self.party.is_active,
-            contract=self.party.contact
+            notice=self.party.notice
             if user
             and (
                 user.id in participants_id_list
@@ -240,7 +240,7 @@ class PartyDetailService:
                 user_id=self.party.organizer_user_id,
             ),
             posted_date=self.party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
-            contract=self.party.contact,
+            notice=self.party.notice,
             is_active=self.party.is_active,
         )
 
