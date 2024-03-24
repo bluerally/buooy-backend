@@ -1,6 +1,9 @@
 #!/bin/bash
 
 DEPLOY_LOG="/home/ec2-user/deploy.log"
+# 배포 로그 파일 초기화
+echo "" > $DEPLOY_LOG
+
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 시작" >> $DEPLOY_LOG
 
 cd /home/ec2-user/app
