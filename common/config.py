@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 
 from tortoise import Tortoise
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+# from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -68,8 +68,8 @@ TORTOISE_ORM = {
 }
 
 # MONGO DB
-motor_client = AsyncIOMotorClient("mongodb://localhost:27017")
-mongo_database = motor_client["bluerally_mongo"]
+# motor_client = AsyncIOMotorClient("mongodb://localhost:27017")
+# mongo_database = motor_client["bluerally_mongo"]
 
 
 # 로깅 설정
@@ -119,5 +119,5 @@ async def db_init() -> None:
     )
 
 
-def get_mongo_db() -> AsyncIOMotorDatabase:
-    return mongo_database
+# def get_mongo_db() -> AsyncIOMotorDatabase:
+#     return mongo_database
