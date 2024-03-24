@@ -40,6 +40,9 @@ IMAGE_TAG=$(cat metadata.txt)
 echo "$(date '+%Y-%m-%d %H:%M:%S') > Pulling Docker image with tag: $IMAGE_TAG" >> $DEPLOY_LOG
 sudo docker pull bluerally/bluerally-be:$IMAGE_TAG 2>&1 | tee -a $DEPLOY_LOG
 
+# Docker 이미지 태그 업데이트
+sudo sed -i "s/bluerally\/bluerally-be:latest/bluerally\/bluerally-be:$IMAGE_TAG/g" docker-compose.yml
+
 echo "$(date '+%Y-%m-%d %H:%M:%S') > Starting Docker Compose services" >> $DEPLOY_LOG
 sudo docker-compose down 2>&1 | tee -a $DEPLOY_LOG
 sudo docker-compose up -d 2>&1 | tee -a $DEPLOY_LOG
