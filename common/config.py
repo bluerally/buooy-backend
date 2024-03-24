@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 
 from tortoise import Tortoise
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,10 +28,16 @@ AWS_S3_ACCESS_KEY = getenv("S3_ACCESS_KEY", default="")
 AWS_S3_SECRET_KEY = getenv("S3_SECRET_KEY", default="")
 
 # MODELS_PATH = ["users.models", "parties.models", "aerich.models", "notifications.models"]
-MODELS_PATH = ["users.models", "parties.models", "aerich.models"]
+MODELS_PATH = [
+    "users.models",
+    "parties.models",
+    "aerich.models",
+    "notifications.models",
+]
 
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
-# if IS_PRODUCTION:
+
+# DATABASE(MYSQL)
 DB_CONNECTION: Union[str, Dict[str, Any]]
 if APP_ENV != APP_ENV_TEST:
     DB_CONNECTION = {
@@ -47,6 +54,7 @@ else:
     # TEST 환경에서는 메모리 DB 사용
     DB_CONNECTION = "sqlite://:memory:"
 
+# TORTOISE ORM
 TORTOISE_ORM = {
     "connections": {
         "default": DB_CONNECTION,
@@ -58,6 +66,11 @@ TORTOISE_ORM = {
         }
     },
 }
+
+# MONGO DB
+motor_client = AsyncIOMotorClient("mongodb://localhost:27017")
+mongo_database = motor_client["bluerally_mongo"]
+
 
 # 로깅 설정
 LOGGING_CONFIG = {
@@ -104,3 +117,7 @@ async def db_init() -> None:
         timezone="Asia/Seoul",
         modules={"models": MODELS_PATH},
     )
+
+
+def get_mongo_db() -> AsyncIOMotorDatabase:
+    return mongo_database

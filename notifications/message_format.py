@@ -1,0 +1,5 @@
+MESSAGE_FORMAT_PARTY_PARTICIPATE = "{user} 님이 {party} 파티에 신청하셨습니다."
+MESSAGE_FORMAT_PARTY_ACCEPTED = "{user} 파티에 참가 수락되었습니다."
+MESSAGE_FORMAT_PARTY_REJECTED = "{} 파티에 참가 거절되었습니다."
+MESSAGE_FORMAT_PARTY_CANCELED = "{} 님이 {} 파티에 참가를 취소하였습니다."
+MESSAGE_FORMAT_PARTY_COMMENT_ADDED = "{} 님이 {} 파티에 댓글을 달았습니다."

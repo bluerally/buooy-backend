@@ -21,11 +21,15 @@ from common.constants import (
     FORMAT_HH_MM,
     FORMAT_YYYY_MM_DD,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ,
+    NOTIFICATION_TYPE_PARTY,
 )
 from typing import List, Optional, Union
 from tortoise.expressions import Q
 from fastapi import HTTPException, status
 from parties.dto.request import PartyUpdateRequest
+from notifications.service import NotificationService
+from notifications.dto import NotificationSpecificDto
+from notifications.message_format import MESSAGE_FORMAT_PARTY_PARTICIPATE
 
 
 class PartyParticipateService:
@@ -66,6 +70,20 @@ class PartyParticipateService:
             participant_user=self.user,
             party=self.party,
         )
+
+        # 파티장에게 알람 보내기
+        notification_service = NotificationService(self.user)
+        notification_info = NotificationSpecificDto(
+            type=NOTIFICATION_TYPE_PARTY,
+            related_id=self.party.id,
+            # 알람 메시지 생성
+            message=MESSAGE_FORMAT_PARTY_PARTICIPATE.format(
+                user=self.user.name, party=self.party.title
+            ),
+            is_global=False,
+            target_user_id=self.user.id,
+        )
+        await notification_service.create_notifications([notification_info])
 
     async def participant_change_participation_status(
         self, new_status: ParticipationStatus
@@ -114,6 +132,11 @@ class PartyParticipateService:
         else:
             raise ValueError("Participants can only cancel their own participation.")
         return participation
+
+    async def _generate_notification_message(
+        self, participation_status: ParticipationStatus
+    ) -> str:
+        return ""
 
 
 class PartyDetailService:

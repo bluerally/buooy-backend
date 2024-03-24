@@ -1,10 +1,7 @@
-from users.dtos import LoginResponseData, SportInfo
+from users.dtos import SportInfo
 from pydantic import BaseModel, EmailStr
 from typing import List
-
-
-class AccessTokenResponse(LoginResponseData):
-    is_new_user: bool
+from users.dtos import UserInfo
 
 
 class SelfProfileResponse(BaseModel):
@@ -20,3 +17,17 @@ class SelfProfileResponse(BaseModel):
     # profile_image: Optional[str] = None
     interested_sports: List[SportInfo]
     # interested_sports: Optional[List[SportInfo]] = None
+
+
+class LoginResponse(BaseModel):
+    user_info: UserInfo
+    access_token: str = ""
+    refresh_token: str = ""
+
+
+class AccessTokenResponse(LoginResponse):
+    is_new_user: bool
+
+
+class RedirectUrlInfoResponse(BaseModel):
+    redirect_url: str

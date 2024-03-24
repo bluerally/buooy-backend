@@ -20,13 +20,14 @@ from common.logging_configs import LoggingAPIRoute
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
-from users.dto.response import AccessTokenResponse, SelfProfileResponse
+from users.dto.response import AccessTokenResponse, SelfProfileResponse, LoginResponse
+from users.dto.request import (
+    RedirectUrlInfoResponse,
+    AccessTokenRequest,
+    RefreshTokenRequest,
+)
 from users.dtos import (
     UserInfo,
-    RedirectUrlInfo,
-    LoginResponseData,
-    RefreshTokenRequest,
-    AccessTokenRequest,
 )
 from users.models import (
     CertificateLevel,
@@ -42,6 +43,9 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
+from notifications.dto import NotificationDto
+from notifications.service import NotificationService
+from users.dto.request import NotificationReadRequest
 
 user_router = APIRouter(
     prefix="/api/user",
@@ -51,13 +55,13 @@ user_router = APIRouter(
 
 @user_router.get(
     "/auth/redirect-url/{platform}",
-    response_model=RedirectUrlInfo,
+    response_model=RedirectUrlInfoResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_social_login_redirect_url(
     request: Request,
     platform: SocialAuthPlatform,
-) -> RedirectUrlInfo:
+) -> RedirectUrlInfoResponse:
     auth: SocialLogin
     if platform == AUTH_PLATFORM_GOOGLE:
         auth = GoogleAuth()
@@ -74,7 +78,7 @@ async def get_social_login_redirect_url(
 
     redirect_url = await auth.get_login_redirect_url()
 
-    return RedirectUrlInfo(redirect_url=redirect_url)
+    return RedirectUrlInfoResponse(redirect_url=redirect_url)
 
 
 @user_router.get(
@@ -208,12 +212,12 @@ async def login_access_token(body: AccessTokenRequest) -> AccessTokenResponse:
 
 @user_router.post(
     "/auth/token/refresh",
-    response_model=LoginResponseData,
+    response_model=LoginResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def access_token_refresh(
     body: RefreshTokenRequest, user: User = Depends(get_current_user)
-) -> LoginResponseData:
+) -> LoginResponse:
     refresh_token = body.refresh_token
 
     is_token_active = await is_active_refresh_token(
@@ -226,7 +230,7 @@ async def access_token_refresh(
 
     # 새로운 Access 토큰 생성
     access_token = create_access_token(data={"user_id": user.id})
-    return LoginResponseData(
+    return LoginResponse(
         user_info=UserInfo(**user.__dict__),
         access_token=access_token,
     )
@@ -306,3 +310,27 @@ async def update_self_profile(
         profile_image=profile_image,
     )
     return updated_profile
+
+
+@user_router.get(
+    "/notifications",
+    response_model=List[NotificationDto],
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_notifications(
+    user: User = Depends(get_current_user)
+) -> List[NotificationDto]:
+    service = NotificationService(user)
+    notification_list = await service.get_user_notifications()
+    return notification_list
+
+
+@user_router.post(
+    "/notifications/read", response_model=None, status_code=status.HTTP_201_CREATED
+)
+async def read_user_notifications(
+    body: NotificationReadRequest, user: User = Depends(get_current_user)
+) -> str:
+    service = NotificationService(user)
+    await service.mark_notifications_as_read(body.read_notification_list)
+    return "Notifications successfully read"

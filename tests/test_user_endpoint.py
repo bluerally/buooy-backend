@@ -1,20 +1,22 @@
+import io
 from datetime import datetime, timedelta
+from typing import Callable, Any, Coroutine
 from unittest.mock import patch, Mock, AsyncMock
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
-import io
+
 import pytest
 from httpx import AsyncClient
-from starlette import status
-
-from common.dependencies import get_current_user
-from users.auth import GoogleAuth
-from users.models import User, UserToken, Sport, UserInterestedSport
-from parties.models import Party, PartyLike
 
 # from common.config import AWS_S3_URL
 from pytest import MonkeyPatch
-from typing import Callable, Any, Coroutine
+from starlette import status
+
+from common.dependencies import get_current_user
+from notifications.models import Notification, NotificationRead
+from parties.models import Party, PartyLike
+from users.auth import GoogleAuth
+from users.models import User, UserToken, Sport, UserInterestedSport
 
 
 @pytest.mark.asyncio
@@ -282,3 +284,79 @@ async def test_update_self_profile(
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_success_get_notifications(client: AsyncClient) -> None:
+    user = await User.create(
+        email="fakeemail2@gmail.com",
+        sns_id="sns_id",
+        name="Test User",
+        profile_image="https://path/to/image",
+    )
+    sport = await Sport.create(name="Freediving")
+    party = await Party.create(
+        title="Freediving Party",
+        body="Freediving Party body",
+        organizer_user=user,
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=2),
+        due_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+        participant_limit=5,
+        participant_cost=200,
+        sport=sport,
+        notice="카톡 아이디는 audwls624",
+    )
+    await Notification.create(type="all", message="전체 공지 1", is_global=True)
+    noti_2 = await Notification.create(
+        type="party", related_id=party.id, message="파티 공지1", target_user=user
+    )
+    noti_3 = await Notification.create(
+        type="all", message="전체 공지 2", is_global=True
+    )
+    await Notification.create(
+        type="party", related_id=party.id, message="파티 공지1", target_user=user
+    )
+
+    await NotificationRead.create(user=user, notification=noti_2)
+    await NotificationRead.create(user=user, notification=noti_3)
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+    # API 호출
+    response = await client.get("/api/user/notifications")
+    # 응답 검증
+    assert response.status_code == 200
+    assert response.json()[0].get("related_id") == party.id
+
+
+@pytest.mark.asyncio
+async def test_success_read_notifications(client: AsyncClient) -> None:
+    user = await User.create(
+        email="fakeemail2@gmail.com",
+        sns_id="sns_id",
+        name="Test User",
+        profile_image="https://path/to/image",
+    )
+
+    noti_1 = await Notification.create(
+        type="all", message="전체 공지 1", is_global=True
+    )
+    noti_2 = await Notification.create(
+        type="all", message="전체 공지 2", is_global=True
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+    # API 호출
+    response = await client.post(
+        "/api/user/notifications/read",
+        json={"read_notification_list": [noti_1.id, noti_2.id]},
+    )
+    # 응답 검증
+    assert response.status_code == 201
+    assert await NotificationRead.filter(notification=noti_1).exists()
+    assert await NotificationRead.filter(notification=noti_2).exists()

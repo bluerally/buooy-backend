@@ -12,7 +12,8 @@ from parties.models import (
     PartyComment,
     PartyLike,
 )
-from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ, NOTIFICATION_TYPE_PARTY
+from notifications.models import Notification
 
 
 @pytest.mark.asyncio
@@ -122,6 +123,12 @@ async def test_success_party_participate(client: AsyncClient) -> None:
             status=ParticipationStatus.PENDING,
         )
         is not None
+    )
+    assert (
+        await Notification.filter(
+            type=NOTIFICATION_TYPE_PARTY, related_id=test_party.id
+        ).exists()
+        is True
     )
 
     app.dependency_overrides.clear()

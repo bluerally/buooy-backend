@@ -1,7 +1,6 @@
 from typing import Optional
 
 from pydantic import BaseModel
-from common.dtos import BaseResponse
 
 
 class UserInfo(BaseModel):
@@ -25,36 +24,6 @@ class UserSimpleProfile(BaseModel):
     user_id: int
     profile_picture: str
     name: str
-
-
-class LoginResponseData(BaseModel):
-    user_info: UserInfo
-    access_token: str = ""
-    refresh_token: str = ""
-
-
-class AccessTokenResponse(LoginResponseData):
-    is_new_user: bool
-
-
-class RedirectUrlInfo(BaseModel):
-    redirect_url: str
-
-
-class SocialLoginRedirectResponse(BaseResponse):
-    data: Optional[RedirectUrlInfo] = None
-
-
-class SocialLoginTokenResponse(BaseResponse):
-    data: Optional[LoginResponseData] = None
-
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
-
-
-class AccessTokenRequest(BaseModel):
-    user_uid: str
 
 
 class SportInfo(BaseModel):
