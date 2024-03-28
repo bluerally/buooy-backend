@@ -47,7 +47,12 @@ class PartyParticipant(BaseModel):
     participant_user = fields.ForeignKeyField(
         "models.User", null=True, on_delete=fields.SET_NULL
     )
-    party = fields.ForeignKeyField("models.Party", null=True, on_delete=fields.SET_NULL)
+    party = fields.ForeignKeyField(
+        "models.Party",
+        null=True,
+        related_name="participations",
+        on_delete=fields.SET_NULL,
+    )
     status = fields.IntEnumField(
         ParticipationStatus, default=ParticipationStatus.PENDING
     )

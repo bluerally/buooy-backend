@@ -1,9 +1,12 @@
-from typing import Optional, List
+from typing import Optional, List, Sequence
 
 from tortoise.expressions import Q
 
 from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
-from notifications.dto import NotificationDto, NotificationBaseDto
+from notifications.dto import (
+    NotificationDto,
+    NotificationBaseDto,
+)
 from notifications.models import Notification, NotificationRead
 from users.models import User
 
@@ -14,7 +17,7 @@ class NotificationService:
 
     @staticmethod
     async def create_notifications(
-        notifications_data: List[NotificationBaseDto]
+        notifications_data: Sequence[NotificationBaseDto]
     ) -> None:
         """
         여러 알림을 데이터베이스에 한 번에 삽입합니다.

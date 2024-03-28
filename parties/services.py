@@ -1,5 +1,5 @@
 import logging
-
+from typing import Any
 from parties.models import (
     Party,
     PartyParticipant,
@@ -29,13 +29,23 @@ from fastapi import HTTPException, status
 from parties.dto.request import PartyUpdateRequest
 from notifications.service import NotificationService
 from notifications.dto import NotificationSpecificDto
-from notifications.message_format import MESSAGE_FORMAT_PARTY_PARTICIPATE
+from notifications.message_format import (
+    MESSAGE_FORMAT_PARTY_PARTICIPATE,
+    MESSAGE_FORMAT_PARTY_ACCEPTED,
+    MESSAGE_FORMAT_PARTY_REJECTED,
+    MESSAGE_FORMAT_PARTY_CANCELED,
+    MESSAGE_FORMAT_PARTY_DETAILS_CHANGED,
+    MESSAGE_FORMAT_PARTY_COMMENT_ADDED,
+)
 
 
 class PartyParticipateService:
     def __init__(self, party: Party, user: User) -> None:
         self.party = party
         self.user = user
+
+    def is_user_organizer(self) -> Any:
+        return self.party.organizer_user_id == self.user.id
 
     @classmethod
     async def create(cls, party_id: int, user: User) -> "PartyParticipateService":
@@ -48,7 +58,7 @@ class PartyParticipateService:
 
     async def participate(self) -> None:
         # 파티장 신청 불가
-        if self.party.organizer_user_id == self.user.id:
+        if self.is_user_organizer():
             raise ValueError("Organizer can not participate")
 
         # 마감 시간이 지났는 지 확인
@@ -81,7 +91,7 @@ class PartyParticipateService:
                 user=self.user.name, party=self.party.title
             ),
             is_global=False,
-            target_user_id=self.user.id,
+            target_user_id=self.party.organizer_user_id,
         )
         await notification_service.create_notifications([notification_info])
 
@@ -90,7 +100,7 @@ class PartyParticipateService:
     ) -> PartyParticipant:
         participation = await PartyParticipant.get_or_none(
             party=self.party, participant_user=self.user
-        )
+        ).select_related("participant_user")
         if not participation:
             raise ValueError("Operation is Forbidden for the user.")
 
@@ -101,12 +111,13 @@ class PartyParticipateService:
     async def organizer_change_participation_status(
         self, participation_id: int, new_status: ParticipationStatus
     ) -> PartyParticipant:
-        participation = await PartyParticipant.get_or_none(id=participation_id)
-        is_party_organizer = self.party.organizer_user_id == self.user.id
-        if not participation and not is_party_organizer:
+        participation = await PartyParticipant.get_or_none(
+            id=participation_id
+        ).select_related("participant_user")
+        if not participation and not self.is_user_organizer():
             raise ValueError("Operation is Forbidden for the user.")
 
-        if is_party_organizer:
+        if self.is_user_organizer():
             return await self._organizer_updates_participation(
                 participation, new_status
             )
@@ -116,22 +127,68 @@ class PartyParticipateService:
     async def _organizer_updates_participation(
         self, participation: PartyParticipant, new_status: ParticipationStatus
     ) -> PartyParticipant:
-        if new_status in (ParticipationStatus.APPROVED, ParticipationStatus.REJECTED):
-            participation.status = new_status
-            await participation.save()
-        else:
+        if new_status not in (
+            ParticipationStatus.APPROVED,
+            ParticipationStatus.REJECTED,
+        ):
             raise ValueError("Invalid status change requested by organizer.")
+
+        participation.status = new_status
+        await participation.save()
+
+        # 파티원에게 알람 보내기
+        notification_service = NotificationService(self.user)
+        # 알람 메시지 생성
+        message = (
+            MESSAGE_FORMAT_PARTY_ACCEPTED
+            if new_status == ParticipationStatus.APPROVED
+            else MESSAGE_FORMAT_PARTY_REJECTED
+        )  # TODO 구조 변경 필요
+        message = message.format(party=self.party.title)
+        notification_info = NotificationSpecificDto(
+            type=NOTIFICATION_TYPE_PARTY,
+            related_id=self.party.id,
+            message=message,
+            is_global=False,
+            target_user_id=participation.participant_user_id,
+        )
+        await notification_service.create_notifications([notification_info])
+
         return participation
 
     async def _participant_updates_own_status(
         self, participation: PartyParticipant, new_status: ParticipationStatus
     ) -> PartyParticipant:
-        if new_status == ParticipationStatus.CANCELLED:
-            participation.status = new_status
-            await participation.save()
-        else:
+        if new_status != ParticipationStatus.CANCELLED:
             raise ValueError("Participants can only cancel their own participation.")
+
+        participation.status = new_status
+        await participation.save()
+
+        # 파티장에게 알람 보내기
+        notification_service = NotificationService()
+        message = MESSAGE_FORMAT_PARTY_CANCELED.format(
+            user=participation.participant_user.name, party=self.party.title
+        )
+        notification_info = NotificationSpecificDto(
+            type=NOTIFICATION_TYPE_PARTY,
+            related_id=self.party.id,
+            message=message,
+            is_global=False,
+            target_user_id=self.party.organizer_user_id,
+        )
+        await notification_service.create_notifications([notification_info])
+
         return participation
+
+    async def set_party_deactivated(self, set_to_deactivate: bool = True) -> None:
+        if not self.is_user_organizer():
+            raise ValueError("Only Party of Organizer can set party status")
+        if set_to_deactivate:
+            self.party.is_active = False
+        else:
+            self.party.is_active = True
+        await self.party.save()
 
     async def _generate_notification_message(
         self, participation_status: ParticipationStatus
@@ -247,6 +304,27 @@ class PartyDetailService:
 
         # 업데이트된 내용 저장
         await self.party.save()
+
+        # 파티원들에게 알람 보내기
+        notification_service = NotificationService()
+        participant_list = await PartyParticipant.filter(
+            party=self.party, status=ParticipationStatus.APPROVED
+        ).all()
+        message_list = []
+        for participant in participant_list:
+            message = MESSAGE_FORMAT_PARTY_DETAILS_CHANGED.format(
+                party=self.party.title
+            )
+            notification_info = NotificationSpecificDto(
+                type=NOTIFICATION_TYPE_PARTY,
+                related_id=self.party.id,
+                message=message,
+                is_global=False,
+                target_user_id=participant.participant_user_id,
+            )
+            message_list.append(notification_info)
+        await notification_service.create_notifications(message_list)
+
         return PartyUpdateInfo(
             id=self.party.id,
             updated_at=self.party.updated_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
@@ -386,6 +464,53 @@ class PartyCommentService:
             comment = await PartyComment.create(
                 party_id=self.party_id, commenter=self.user, content=content
             )
+
+            # 파티원들에게 알람 보내기
+            notification_service = NotificationService()
+            party = await Party.get_or_none(id=self.party_id)
+            participant_list = (
+                await PartyParticipant.filter(
+                    party_id=self.party_id,
+                    status__in=[
+                        ParticipationStatus.APPROVED,
+                        ParticipationStatus.PENDING,
+                    ],
+                )
+                .select_related("participant_user")
+                .all()
+            )
+            message_list = []
+            for participant in participant_list:
+                # 자기 자신 제외한 사람들에게 알람
+                if not self.user:
+                    break
+                if self.user.id == participant.participant_user_id:
+                    continue
+                message = MESSAGE_FORMAT_PARTY_COMMENT_ADDED.format(
+                    user=self.user.name, party=party.title
+                )
+                notification_info = NotificationSpecificDto(
+                    type=NOTIFICATION_TYPE_PARTY,
+                    related_id=self.party_id,
+                    message=message,
+                    is_global=False,
+                    target_user_id=participant.participant_user_id,
+                )
+                message_list.append(notification_info)
+            if self.user and party.organizer_user_id != self.user.id:
+                message = MESSAGE_FORMAT_PARTY_COMMENT_ADDED.format(
+                    user=self.user.name, party=party.title
+                )
+                notification_info = NotificationSpecificDto(
+                    type=NOTIFICATION_TYPE_PARTY,
+                    related_id=self.party_id,
+                    message=message,
+                    is_global=False,
+                    target_user_id=party.organizer_user_id,
+                )
+                message_list.append(notification_info)
+            await notification_service.create_notifications(message_list)
+
             return PartyCommentDetail(
                 id=comment.id,
                 commenter_profile=UserSimpleProfile(

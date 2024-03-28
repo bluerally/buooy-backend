@@ -64,6 +64,13 @@ async def test_success_party_update(client: AsyncClient) -> None:
         name="Party Organizer User",
         profile_image="https://path/to/image",
     )
+
+    participation_user = await User.create(
+        email="partyorg61@gmail.com",
+        sns_id="some_sns_id2",
+        name="Party Participation User",
+        profile_image="https://path/to/image1",
+    )
     sport = await Sport.create(name="프리다이빙")
 
     party = await Party.create(
@@ -76,6 +83,12 @@ async def test_success_party_update(client: AsyncClient) -> None:
         participant_cost=200,
         sport=sport,
         notice="audwls624",
+    )
+
+    await PartyParticipant.create(
+        party=party,
+        participant_user=participation_user,
+        status=ParticipationStatus.APPROVED,
     )
 
     # 의존성 오버라이드 설정
@@ -94,7 +107,12 @@ async def test_success_party_update(client: AsyncClient) -> None:
     assert updated_party.gather_at == datetime.strptime(
         request_data["gather_at"], FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
     )
-
+    assert (
+        await Notification.get_or_none(
+            related_id=party.id, target_user=participation_user
+        )
+        is not None
+    )
     # 오버라이드 초기화
     app.dependency_overrides.clear()
 
@@ -130,6 +148,13 @@ async def test_success_party_participate(client: AsyncClient) -> None:
         ).exists()
         is True
     )
+    # 파티장 알람(파티 신청)
+    assert (
+        await Notification.get_or_none(
+            related_id=test_party.id, target_user=organizer_user
+        )
+        is not None
+    )
 
     app.dependency_overrides.clear()
 
@@ -159,6 +184,13 @@ async def test_organizer_accepts_participation(client: AsyncClient) -> None:
     changed_participation = await PartyParticipant.get_or_none(id=participation.id)
     assert changed_participation is not None
     assert changed_participation.status == ParticipationStatus.APPROVED
+    # 파티원 알람(파티 수락)
+    assert (
+        await Notification.get_or_none(
+            related_id=test_party.id, target_user=participant_user
+        )
+        is not None
+    )
 
 
 @pytest.mark.asyncio
@@ -187,6 +219,13 @@ async def test_success_participant_cancel_participation(client: AsyncClient) -> 
     changed_participation = await PartyParticipant.get_or_none(id=participation.id)
     assert changed_participation is not None
     assert changed_participation.status == ParticipationStatus.CANCELLED
+    # 파티장 알람(파티원 취소)
+    assert (
+        await Notification.get_or_none(
+            related_id=test_party.id, target_user=organizer_user
+        )
+        is not None
+    )
 
 
 @pytest.mark.asyncio
@@ -337,10 +376,21 @@ async def test_post_party_comment_success(client: AsyncClient) -> None:
         name="Commenter",
         profile_image="https://path/to/image",
     )
+    participation_user = await User.create(
+        email="commente1r@example.com",
+        sns_id="commenter1_sns_id",
+        name="Commenter1",
+        profile_image="https://path/to/image1",
+    )
     party = await Party.create(
         title="Test Party",
         body="Test Party Body",
         organizer_user=user,
+    )
+    await PartyParticipant.create(
+        party=party,
+        participant_user=participation_user,
+        status=ParticipationStatus.PENDING,
     )
 
     from main import app
@@ -355,6 +405,13 @@ async def test_post_party_comment_success(client: AsyncClient) -> None:
     response_data = response.json()
     assert response_data["content"] == comment_content
 
+    # 파티 댓글 알람
+    assert (
+        await Notification.get_or_none(
+            related_id=party.id, target_user=participation_user
+        )
+        is not None
+    )
     app.dependency_overrides.clear()
 
 
