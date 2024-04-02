@@ -568,3 +568,51 @@ async def test_post_party_like_cancel_success(client: AsyncClient) -> None:
     assert not await PartyLike.filter(user=user, party=party).exists()
 
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_self_organized_party_list_success(client: AsyncClient) -> None:
+    # 더미 데이터 생성
+    organizer_user = await User.create(
+        name="Organizer User 1", profile_image="http://example.com/image1.jpg"
+    )
+
+    sport_1 = await Sport.create(name="Freediving")
+    sport_2 = await Sport.create(name="Scuba Diving")
+
+    await Party.create(
+        title="Freediving Party",
+        body="Freediving Party body",
+        organizer_user=organizer_user,
+        gather_at=datetime.now(UTC) + timedelta(days=3),
+        due_at=datetime.now(UTC) + timedelta(days=4),
+        participant_limit=5,
+        participant_cost=200,
+        sport=sport_1,
+    )
+    await Party.create(
+        title="Scuba Diving Party",
+        body="Scuba Diving Party body",
+        organizer_user=organizer_user,
+        gather_at=datetime.now(UTC) + timedelta(days=5),
+        due_at=datetime.now(UTC) + timedelta(days=6),
+        participant_limit=6,
+        participant_cost=300,
+        sport=sport_2,
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: organizer_user
+
+    # API 호출
+    response = await client.get("/api/party/self/organized")
+    response_data = response.json()
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert len(response_data) == 2
+
+    # 의존성 오버라이드 초기화
+    app.dependency_overrides.clear()

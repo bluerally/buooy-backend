@@ -387,7 +387,6 @@ class PartyListService:
                 # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
 
             # 페이징 계산
-
             offset = (page - 1) * page_size
             limit = page_size
 
@@ -395,6 +394,27 @@ class PartyListService:
                 await Party.filter(query)
                 .select_related("sport", "organizer_user")
                 .prefetch_related("participants")
+                .order_by("-id")
+                .offset(offset)
+                .limit(limit)
+            )
+            party_list = [await self._build_party_response(party) for party in parties]
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return party_list
+
+    async def get_self_organized_parties(
+        self, page: int = 1, page_size: int = 10
+    ) -> List[PartyListDetail]:
+        try:
+            offset = (page - 1) * page_size
+            limit = page_size
+
+            parties = (
+                await Party.filter(organizer_user=self.user)
+                .select_related("sport", "organizer_user")
+                .prefetch_related("participants")
+                .order_by("-id")
                 .offset(offset)
                 .limit(limit)
             )
