@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from zoneinfo import ZoneInfo
 from parties.models import (
     Party,
     PartyParticipant,
@@ -21,6 +22,7 @@ from common.constants import (
     FORMAT_HH_MM,
     FORMAT_YYYY_MM_DD,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ,
+    FORMAT_YYYY_MM_DD_T_HH_MM_SS,
     NOTIFICATION_TYPE_PARTY,
 )
 from typing import List, Optional, Union
@@ -37,6 +39,7 @@ from notifications.message_format import (
     MESSAGE_FORMAT_PARTY_DETAILS_CHANGED,
     MESSAGE_FORMAT_PARTY_COMMENT_ADDED,
 )
+from common.config import TIME_ZONE
 
 
 class PartyParticipateService:
@@ -370,14 +373,22 @@ class PartyListService:
                 query &= Q(is_active=True)
 
             if gather_date_min:
-                query &= Q(
-                    gather_at__gte=datetime.strptime(gather_date_min, FORMAT_YYYY_MM_DD)
+                gather_at_min = datetime.strptime(
+                    gather_date_min, FORMAT_YYYY_MM_DD_T_HH_MM_SS
                 )
+                gather_at_min_with_tz = gather_at_min.replace(
+                    tzinfo=ZoneInfo(TIME_ZONE)
+                )
+                query &= Q(gather_at__gte=gather_at_min_with_tz)
 
             if gather_date_max:
-                query &= Q(
-                    gather_at__lte=datetime.strptime(gather_date_max, FORMAT_YYYY_MM_DD)
+                gather_at_max = datetime.strptime(
+                    gather_date_max, FORMAT_YYYY_MM_DD_T_HH_MM_SS
                 )
+                gather_at_max_with_tz = gather_at_max.replace(
+                    tzinfo=ZoneInfo(TIME_ZONE)
+                )
+                query &= Q(gather_at__lte=gather_at_max_with_tz)
 
             if search_query:
                 # TODO 쿼리 개선 필요

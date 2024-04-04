@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = getenv("SECRET_KEY")
 ALGORITHM = "HS256"
+TIME_ZONE = "Asia/Seoul"
 
 APP_ENV_LOCAL = "local"
 APP_ENV_PROD = "prod"
@@ -114,7 +115,7 @@ logger = logging.getLogger("bluerally.api")
 async def db_init() -> None:
     await Tortoise.init(
         config=TORTOISE_ORM,
-        timezone="Asia/Seoul",
+        timezone=TIME_ZONE,
         modules={"models": MODELS_PATH},
     )
 
