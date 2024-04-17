@@ -193,11 +193,6 @@ class PartyParticipateService:
             self.party.is_active = True
         await self.party.save()
 
-    async def _generate_notification_message(
-        self, participation_status: ParticipationStatus
-    ) -> str:
-        return ""
-
 
 class PartyDetailService:
     """파티 상세 정보 service"""
@@ -430,6 +425,35 @@ class PartyListService:
                 .limit(limit)
             )
             party_list = [await self._build_party_response(party) for party in parties]
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return party_list
+
+    async def get_participated_parties(
+        self, page: int = 1, page_size: int = 10
+    ) -> List[PartyListDetail]:
+        try:
+            offset = (page - 1) * page_size
+            limit = page_size
+            party_participates = (
+                await PartyParticipant.filter(
+                    participant_user=self.user,
+                    status__in=[
+                        ParticipationStatus.APPROVED,
+                        ParticipationStatus.PENDING,
+                    ],
+                )
+                .select_related(
+                    "party", "party__sport", "participant_user", "party__organizer_user"
+                )
+                .order_by("-id")
+                .offset(offset)
+                .limit(limit)
+            )
+            party_list = [
+                await self._build_party_response(party_participate.party)
+                for party_participate in party_participates
+            ]
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         return party_list

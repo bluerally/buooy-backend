@@ -303,7 +303,7 @@ async def cancel_liked_party(
 
 
 @party_router.get(
-    "/self/organized",
+    "/me/organized",
     response_model=List[PartyListDetail],
     status_code=status.HTTP_200_OK,
 )
@@ -314,6 +314,23 @@ async def get_self_organized_party(
     try:
         service = PartyListService(user)
         party_list = await service.get_self_organized_parties(page=page)
+        return party_list
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@party_router.get(
+    "/me/participated",
+    response_model=List[PartyListDetail],
+    status_code=status.HTTP_200_OK,
+)
+async def get_participated_party(
+    page: int = 1,
+    user: User = Depends(get_current_user),
+) -> List[PartyListDetail]:
+    try:
+        service = PartyListService(user)
+        party_list = await service.get_participated_parties(page=page)
         return party_list
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

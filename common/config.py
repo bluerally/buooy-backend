@@ -1,10 +1,14 @@
 import logging.config
+from datetime import datetime
+from logging import Handler, LogRecord
 from os import getenv
 from pathlib import Path
 from typing import Union, Dict, Any
+from zoneinfo import ZoneInfo
 
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
 from tortoise import Tortoise
-# from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,7 +32,6 @@ AWS_S3_URL = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com"
 AWS_S3_ACCESS_KEY = getenv("S3_ACCESS_KEY", default="")
 AWS_S3_SECRET_KEY = getenv("S3_SECRET_KEY", default="")
 
-# MODELS_PATH = ["users.models", "parties.models", "aerich.models", "notifications.models"]
 MODELS_PATH = [
     "users.models",
     "parties.models",
@@ -69,47 +72,77 @@ TORTOISE_ORM = {
 }
 
 # MONGO DB
-# motor_client = AsyncIOMotorClient("mongodb://localhost:27017")
-# mongo_database = motor_client["bluerally_mongo"]
+MONGO_URI = getenv("MONGO_URI", default="mongodb://localhost:27017")
+MONGO_DATABASE = getenv("MONGODB_DATABASE", "blue-rally")
+MONGO_LOGGING_COLLECTION = "logs"
 
 
 # 로깅 설정
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "standard": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(httpMethod)s - %(url)s - %(headers)s - %(queryParams)s - %(body)s",
-        },
-    },
-    "handlers": {
-        "info_file_handler": {
-            "level": "INFO",
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "standard",
-            "filename": str(BASE_DIR / "logs/info.log"),
-            "maxBytes": 1048576,  # 1MB
-            "backupCount": 5,
-        },
-        "error_file_handler": {
-            "level": "ERROR",
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "standard",
-            "filename": str(BASE_DIR / "logs/error.log"),
-            "maxBytes": 1048576,  # 1MB
-            "backupCount": 5,
-        },
-    },
-    "loggers": {
-        "bluerally.api": {
-            "handlers": ["info_file_handler", "error_file_handler"],
-            "propagate": False,
-        },
-    },
-}
+# LOGGING_CONFIG = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "formatters": {
+#         "standard": {
+#             "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(httpMethod)s - %(url)s - %(headers)s - %(queryParams)s - %(body)s",
+#         },
+#     },
+#     "handlers": {
+#         "info_file_handler": {
+#             "level": "INFO",
+#             "class": "logging.handlers.RotatingFileHandler",
+#             "formatter": "standard",
+#             "filename": str(BASE_DIR / "logs/info.log"),
+#             "maxBytes": 1048576,  # 1MB
+#             "backupCount": 5,
+#         },
+#         "error_file_handler": {
+#             "level": "ERROR",
+#             "class": "logging.handlers.RotatingFileHandler",
+#             "formatter": "standard",
+#             "filename": str(BASE_DIR / "logs/error.log"),
+#             "maxBytes": 1048576,  # 1MB
+#             "backupCount": 5,
+#         },
+#     },
+#     "loggers": {
+#         "bluerally.api": {
+#             "handlers": ["info_file_handler", "error_file_handler"],
+#             "propagate": False,
+#         },
+#     },
+# }
 
-logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger("bluerally.api")
+
+class MongoLogHandler(Handler):
+    def __init__(
+        self, uri: str = "", database_name: str = "", collection_name: str = ""
+    ) -> None:
+        super().__init__()
+        self.client = MongoClient(uri, server_api=ServerApi("1"))
+        self.db = self.client[database_name]
+        self.collection = self.db[collection_name]
+
+    def emit(self, record: LogRecord) -> None:
+        document = {
+            "timestamp": datetime.now(ZoneInfo(TIME_ZONE)),
+            "level": record.levelname,
+            "message": record.msg,
+            "module": record.module,
+            "path": record.pathname,
+            "extra": getattr(record, "extra", {}),
+        }
+        self.collection.insert_one(document)
+
+
+logger = logging.getLogger("blue-rally-log")
+logger.setLevel(logging.INFO)
+mongo_handler = MongoLogHandler(
+    uri=MONGO_URI,
+    database_name=MONGO_DATABASE,
+    collection_name=MONGO_LOGGING_COLLECTION,
+)
+if not IS_TEST:
+    logger.addHandler(mongo_handler)
 
 
 async def db_init() -> None:
@@ -118,7 +151,3 @@ async def db_init() -> None:
         timezone=TIME_ZONE,
         modules={"models": MODELS_PATH},
     )
-
-
-# def get_mongo_db() -> AsyncIOMotorDatabase:
-#     return mongo_database

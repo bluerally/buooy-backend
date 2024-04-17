@@ -9,7 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 from tortoise import Tortoise
 
-from common.config import TORTOISE_ORM
+from common.config import TORTOISE_ORM, logger
 from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware
 from parties.routers import party_router
@@ -66,6 +66,12 @@ async def openapi(admin: str = Depends(get_admin)) -> Any:
 @app.get("/")
 async def health_check() -> str:
     return "Health Check Succeed!"
+
+
+@app.get("/test/logging")
+def test_logging() -> str:
+    logger.info("Test logging message")
+    return "Logging Succeed!"
 
 
 # @app.get("/test")

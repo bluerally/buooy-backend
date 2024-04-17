@@ -607,7 +607,66 @@ async def test_get_self_organized_party_list_success(client: AsyncClient) -> Non
     app.dependency_overrides[get_current_user] = lambda: organizer_user
 
     # API 호출
-    response = await client.get("/api/party/self/organized")
+    response = await client.get("/api/party/me/organized")
+    response_data = response.json()
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert len(response_data) == 2
+
+    # 의존성 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_participated_party_list_success(client: AsyncClient) -> None:
+    # 더미 데이터 생성
+    user = await User.create(name="User", profile_image="http://example.com/image1.jpg")
+    org_user = await User.create(
+        name="Org User", profile_image="http://example.com/image1.jpg"
+    )
+
+    sport = await Sport.create(name="Freediving")
+
+    party_1 = await Party.create(
+        title="Freediving Party",
+        body="Freediving Party body",
+        organizer_user=org_user,
+        gather_at=datetime.now(UTC) + timedelta(days=3),
+        due_at=datetime.now(UTC) + timedelta(days=4),
+        participant_limit=5,
+        participant_cost=200,
+        sport=sport,
+    )
+    party_2 = await Party.create(
+        title="Freediving Party 2",
+        body="Freediving Party 2 body",
+        organizer_user=org_user,
+        gather_at=datetime.now(UTC) + timedelta(days=5),
+        due_at=datetime.now(UTC) + timedelta(days=6),
+        participant_limit=6,
+        participant_cost=300,
+        sport=sport,
+    )
+
+    await PartyParticipant.create(
+        party=party_1,
+        participant_user=user,
+        status=ParticipationStatus.PENDING,
+    )
+    await PartyParticipant.create(
+        party=party_2,
+        participant_user=user,
+        status=ParticipationStatus.APPROVED,
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # API 호출
+    response = await client.get("/api/party/me/participated")
     response_data = response.json()
 
     # 응답 검증
