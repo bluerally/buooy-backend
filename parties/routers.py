@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional, Any
 
 from fastapi import APIRouter, status, Depends, Request, HTTPException
-
+from common.logging_configs import LoggingAPIRoute
 from common.dependencies import get_current_user
 from common.utils import convert_string_to_datetime
 from parties.dtos import (
@@ -33,6 +33,7 @@ from parties.dto.request import (
 
 party_router = APIRouter(
     prefix="/api/party",
+    route_class=LoggingAPIRoute,
 )
 
 

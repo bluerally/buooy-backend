@@ -4,7 +4,6 @@ from fastapi.routing import APIRoute
 from starlette.requests import Request
 from starlette.responses import Response
 
-# from common.config import logger
 from common.config import logger
 
 
