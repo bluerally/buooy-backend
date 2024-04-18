@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 from zoneinfo import ZoneInfo
 from parties.models import (
@@ -39,7 +38,7 @@ from notifications.message_format import (
     MESSAGE_FORMAT_PARTY_DETAILS_CHANGED,
     MESSAGE_FORMAT_PARTY_COMMENT_ADDED,
 )
-from common.config import TIME_ZONE
+from common.config import TIME_ZONE, logger
 
 
 class PartyParticipateService:
@@ -579,7 +578,7 @@ class PartyCommentService:
                 content=comment.content,
             )
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"[Party Comment Error]: (POST) party_id:{self.party_id}, msg:{e}"
             )
             raise ValueError(f"Party comment posting error - party_id:{self.party_id}")
@@ -596,7 +595,7 @@ class PartyCommentService:
             comment.is_deleted = True
             await comment.save()
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"[Party Comment Error]: (DELETE) party_id:{self.party_id}, comment_id:{comment_id}, msg:{e}"
             )
             raise ValueError(f"Party comment delete error - comment_id:{comment_id}")
@@ -632,7 +631,7 @@ class PartyCommentService:
                 content=comment.content,
             )
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"[Party Comment Error]: (CHANGE) party_id:{self.party_id}, comment_id:{comment_id}, msg:{e}"
             )
             raise ValueError(f"Party comment change error - comment_id:{comment_id}")

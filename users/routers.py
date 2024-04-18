@@ -1,4 +1,3 @@
-import logging
 import uuid
 from typing import List, Optional, Any, Annotated
 
@@ -9,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from common.cache_constants import CACHE_KEY_LOGIN_REDIRECT_UUID
 from common.cache_utils import RedisManager
 from common.choices import SocialAuthPlatform
-from common.config import LOGIN_REDIRECT_URL
+from common.config import LOGIN_REDIRECT_URL, logger
 from common.constants import (
     AUTH_PLATFORM_GOOGLE,
     AUTH_PLATFORM_KAKAO,
@@ -104,7 +103,7 @@ async def social_auth_callback(
                 #     url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
                 #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 # )
-                logging.error(
+                logger.error(
                     f"[Auth Error]:platform-{platform.value} | error-{error} | desc-{error_description}"
                 )
                 raise HTTPException(
@@ -122,7 +121,7 @@ async def social_auth_callback(
                 #     url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?error={error}&error_decs={error_description}",
                 #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 # )
-                logging.error(
+                logger.error(
                     f"[Auth Error]:platform-{platform.value} | error-{error} | desc-{error_description}"
                 )
                 raise HTTPException(
@@ -163,7 +162,7 @@ async def social_auth_callback(
                 url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
             )
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
@@ -180,7 +179,7 @@ async def login_access_token(body: AccessTokenRequest) -> AccessTokenResponse:
     cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_uuid)
     user_id, is_new_user = r.get_value(cache_key)
     if not user_id:
-        logging.error(f"[LOGIN API ERROR]: INVALID uuid: {user_uuid}")
+        logger.error(f"[LOGIN API ERROR]: INVALID uuid: {user_uuid}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid uuid"
         )

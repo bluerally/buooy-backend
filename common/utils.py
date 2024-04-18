@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -7,7 +6,7 @@ from typing import Optional, Any
 import aioboto3
 import bcrypt
 from fastapi import UploadFile
-
+from common.config import logger
 from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
 
 
@@ -19,7 +18,7 @@ def convert_string_to_datetime(string_datetime: str) -> Optional[datetime]:
     try:
         return datetime.strptime(string_datetime, FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ)
     except Exception:
-        logging.error(f"Invalid datetime: string - {string_datetime}")
+        logger.error(f"Invalid datetime: string - {string_datetime}")
         return None
 
 
@@ -42,7 +41,7 @@ async def s3_upload_file(folder: str, file: UploadFile) -> str:
         try:
             await s3.upload_fileobj(file.file, S3_BUCKET, filename)
         except Exception as e:
-            logging.error(f"Unable to upload {file.filename} to S3: {e} ({type(e)})")
+            logger.error(f"Unable to upload {file.filename} to S3: {e} ({type(e)})")
             return ""
 
     return filename
