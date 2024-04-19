@@ -53,23 +53,25 @@ async def get_sports_list(request: Request) -> Any:
 async def create_party(
     request_data: PartyDetailRequest, user: User = Depends(get_current_user)
 ) -> PartyCreateResponse:
-    party = await Party.create(
-        title=request_data.title,
-        body=request_data.body,
-        gather_at=convert_string_to_datetime(request_data.gather_at),
-        due_at=convert_string_to_datetime(request_data.due_at),
-        place_id=request_data.place_id,
-        place_name=request_data.place_name,
-        address=request_data.address,
-        longitude=request_data.longitude,
-        latitude=request_data.latitude,
-        participant_limit=request_data.participant_limit,
-        participant_cost=request_data.participant_cost,
-        sport_id=request_data.sport_id,
-        organizer_user=user,
-        notice=request_data.notice,
-    )
-
+    try:
+        party = await Party.create(
+            title=request_data.title,
+            body=request_data.body,
+            gather_at=convert_string_to_datetime(request_data.gather_at),
+            due_at=convert_string_to_datetime(request_data.due_at),
+            place_id=request_data.place_id,
+            place_name=request_data.place_name,
+            address=request_data.address,
+            longitude=request_data.longitude,
+            latitude=request_data.latitude,
+            participant_limit=request_data.participant_limit,
+            participant_cost=request_data.participant_cost,
+            sport_id=request_data.sport_id,
+            organizer_user=user,
+            notice=request_data.notice,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     # 생성된 파티 정보를 응답
     return PartyCreateResponse(party_id=party.id)
 
