@@ -360,3 +360,27 @@ async def test_success_read_notifications(client: AsyncClient) -> None:
     assert response.status_code == 201
     assert await NotificationRead.filter(notification=noti_1).exists()
     assert await NotificationRead.filter(notification=noti_2).exists()
+
+
+@pytest.mark.asyncio
+async def test_success_get_user_profile(client: AsyncClient) -> None:
+    sport_1 = await Sport.create(name="Sport1")
+    sport_2 = await Sport.create(name="Sport2")
+    sport_3 = await Sport.create(name="Sport3")
+    user = await User.create(
+        email="fakeemail2@gmail.com",
+        sns_id="sns_id",
+        name="Test User",
+        introduction="안녕하세요",
+        profile_image="https://path/to/image",
+    )
+    await UserInterestedSport.create(user=user, sport=sport_1)
+    await UserInterestedSport.create(user=user, sport=sport_2)
+    await UserInterestedSport.create(user=user, sport=sport_3)
+
+    # API 호출
+    response = await client.get(f"/api/user/profile/{user.id}")
+
+    # 응답 검증
+    assert response.status_code == 200
+    assert response.json().get("introduction") == "안녕하세요"

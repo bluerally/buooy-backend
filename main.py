@@ -13,6 +13,7 @@ from common.config import TORTOISE_ORM
 from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware
 from parties.routers import party_router
+from users.routers import user_router
 from common.logging_configs import LoggingAPIRoute
 
 
@@ -51,15 +52,10 @@ test_router = APIRouter(
     prefix="/api/test",
     route_class=LoggingAPIRoute,
 )
-# @test_router.get("/logging")
-# def test_logging() -> str:
-#     logger.info("Test logging message")
-#     return "Logging Succeed!"
-#
+
 # # router include
-# app.include_router(user_router)
+app.include_router(user_router)
 app.include_router(party_router)
-app.include_router(test_router)
 
 
 # Swagger UI 권한 설정

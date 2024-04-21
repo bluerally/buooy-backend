@@ -333,3 +333,17 @@ async def read_user_notifications(
     service = NotificationService(user)
     await service.mark_notifications_as_read(body.read_notification_list)
     return "Notifications successfully read"
+
+
+@user_router.get(
+    "/profile/{user_id}",
+    response_model=SelfProfileResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_profile(
+    user_id: int,
+) -> SelfProfileResponse:
+    user = await User.get(id=user_id)
+    service = SelfProfileService(user)
+    user_profile = await service.get_profile()
+    return user_profile
