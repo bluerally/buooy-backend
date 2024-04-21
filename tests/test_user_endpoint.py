@@ -291,6 +291,10 @@ async def test_update_self_profile(
     )  # Mock에서 반환된 URL
     interested_sports = await UserInterestedSport.filter(user=user).all()
     assert len(interested_sports) == 2
+    assert response.json()["interested_sports"][0] == {
+        "id": sport_1.id,
+        "name": sport_1.name,
+    }
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()
