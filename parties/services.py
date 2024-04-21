@@ -277,6 +277,11 @@ class PartyDetailService:
                 or user.id == self.party.organizer_user_id
             )
             else None,
+            place_name=self.party.place_name,
+            place_id=self.party.place_id,
+            address=self.party.address,
+            longitude=self.party.longitude,
+            latitude=self.party.latitude,
         )
 
     async def update_party(
@@ -481,6 +486,11 @@ class PartyListService:
             if self.user
             else False,
             is_active=party.is_active,
+            place_name=party.place_name,
+            place_id=party.place_id,
+            address=party.address,
+            longitude=party.longitude,
+            latitude=party.latitude,
         )
 
 
@@ -681,6 +691,11 @@ class PartyLikeService:
             posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             is_user_organizer=False,
             is_active=party.is_active,
+            place_name=party.place_name,
+            place_id=party.place_id,
+            address=party.address,
+            longitude=party.longitude,
+            latitude=party.latitude,
         )
 
     async def get_liked_parties(self) -> List[PartyListDetail]:

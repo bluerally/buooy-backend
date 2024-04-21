@@ -83,6 +83,11 @@ async def test_success_party_update(client: AsyncClient) -> None:
         participant_cost=200,
         sport=sport,
         notice="audwls624",
+        place_id=1232152,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
 
     await PartyParticipant.create(
@@ -243,6 +248,11 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
         participant_limit=10,
         participant_cost=100,
         sport=await Sport.create(name="Freediving"),
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     approved_participant_user_1 = await User.create(
         name="Participated User 1", profile_image="http://example.com/image2.jpg"
@@ -327,6 +337,11 @@ async def test_get_party_list_success(client: AsyncClient) -> None:
         participant_limit=5,
         participant_cost=200,
         sport=sport_1,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     await Party.create(
         title="Scuba Diving Party",
@@ -337,6 +352,11 @@ async def test_get_party_list_success(client: AsyncClient) -> None:
         participant_limit=6,
         participant_cost=300,
         sport=sport_2,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
 
     # 의존성 오버라이드 설정
@@ -589,6 +609,11 @@ async def test_get_self_organized_party_list_success(client: AsyncClient) -> Non
         participant_limit=5,
         participant_cost=200,
         sport=sport_1,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     await Party.create(
         title="Scuba Diving Party",
@@ -599,6 +624,11 @@ async def test_get_self_organized_party_list_success(client: AsyncClient) -> Non
         participant_limit=6,
         participant_cost=300,
         sport=sport_2,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
 
     # 의존성 오버라이드 설정
@@ -637,6 +667,11 @@ async def test_get_participated_party_list_success(client: AsyncClient) -> None:
         participant_limit=5,
         participant_cost=200,
         sport=sport,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     party_2 = await Party.create(
         title="Freediving Party 2",
@@ -647,6 +682,11 @@ async def test_get_participated_party_list_success(client: AsyncClient) -> None:
         participant_limit=6,
         participant_cost=300,
         sport=sport,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
 
     await PartyParticipant.create(
