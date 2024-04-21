@@ -167,6 +167,11 @@ async def test_success_get_liked_parties(client: AsyncClient) -> None:
         body="Test Party Body",
         organizer_user=organizer,
         sport=sport,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     party_2 = await Party.create(
         title="Test Party2",
@@ -176,6 +181,11 @@ async def test_success_get_liked_parties(client: AsyncClient) -> None:
         gather_at=datetime.now() + timedelta(days=2),
         organizer_user=organizer,
         sport=sport,
+        place_id=123215213,
+        place_name="딥스테이션",
+        address="경기도 용신시 처인구 784-2",
+        longitude=float(37.2805605),
+        latitude=float(127.1997416),
     )
     await PartyLike.create(user=user, party=party_1)
     await PartyLike.create(user=user, party=party_2)
