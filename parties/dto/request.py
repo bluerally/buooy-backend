@@ -8,7 +8,7 @@ class PartyDetailRequest(BaseModel):
     body: Optional[str] = None
     gather_at: str
     due_at: str
-    place_id: int
+    place_id: Optional[int] = None
     place_name: str
     address: str
     longitude: float
