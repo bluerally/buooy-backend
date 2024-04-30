@@ -48,7 +48,7 @@ async def get_sports_list(request: Request) -> Any:
 
 
 @party_router.post(
-    "/", response_model=PartyCreateResponse, status_code=status.HTTP_201_CREATED
+    "", response_model=PartyCreateResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_party(
     request_data: PartyDetailRequest, user: User = Depends(get_current_user)

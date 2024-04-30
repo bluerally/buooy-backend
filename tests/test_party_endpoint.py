@@ -46,7 +46,7 @@ async def test_success_party_create(client: AsyncClient) -> None:
         "sport_id": sport.id,
     }
     # API 호출
-    response = await client.post("/api/party/", json=request_data)
+    response = await client.post("/api/party", json=request_data)
 
     # 응답 검증
     assert response.status_code == status.HTTP_201_CREATED
