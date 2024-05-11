@@ -116,8 +116,10 @@ class PartyParticipateService:
         participation = await PartyParticipant.get_or_none(
             id=participation_id
         ).select_related("participant_user")
-        if not participation and not self.is_user_organizer():
-            raise ValueError("Operation is Forbidden for the user.")
+        if participation is None:
+            raise ValueError("Invalid Participation ID")
+        if not self.is_user_organizer():
+            raise PermissionError("Operation is Forbidden for the user.")
 
         if self.is_user_organizer():
             return await self._organizer_updates_participation(
