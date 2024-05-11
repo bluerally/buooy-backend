@@ -30,7 +30,7 @@ class PartyListDetail(PartyInfo):
     participants_info: str
     is_user_organizer: bool = False
     place_name: str
-    place_id: int
+    place_id: Optional[int]
     address: str
     longitude: float
     latitude: float
@@ -43,7 +43,7 @@ class PartyDetail(PartyInfo):
     approved_participants: Optional[List[ParticipantProfile]] = None
     notice: Optional[str] = None
     place_name: str
-    place_id: int
+    place_id: Optional[int]
     address: str
     longitude: float
     latitude: float
