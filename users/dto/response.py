@@ -1,6 +1,6 @@
 from users.dtos import SportInfo
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional
 from users.dtos import UserInfo
 
 
@@ -11,11 +11,11 @@ class SelfProfileResponse(BaseModel):
     # name: Optional[str] = None
     email: EmailStr
     # email: Optional[EmailStr] = None
-    introduction: str
+    introduction: Optional[str]
     # introduction: Optional[str] = None
-    profile_image: str
+    profile_image: Optional[str]
     # profile_image: Optional[str] = None
-    interested_sports: List[SportInfo]
+    interested_sports: Optional[List[SportInfo]]
     # interested_sports: Optional[List[SportInfo]] = None
 
 
