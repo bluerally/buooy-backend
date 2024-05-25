@@ -1,7 +1,7 @@
 # Bluerally Backend
 
 ## OutLine
-Dive Match is a platform for free diving and scuba diving enthusiasts to find buddies. This service helps divers find partners for a safe and enjoyable diving experience.
+Bluerally is a platform for free diving and scuba diving enthusiasts to find buddies. This service helps divers find partners for a safe and enjoyable diving experience.
 
 ## Functions
 - Diver profile management(Sign-up, Authentication, Authorization)
