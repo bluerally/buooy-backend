@@ -296,6 +296,12 @@ async def test_update_self_profile(
         "name": sport_1.name,
     }
 
+    # 변경된 profile로 조회
+    get_profile_response = await client.get("/api/user/me")
+    assert get_profile_response.status_code == status.HTTP_200_OK
+    assert get_profile_response.json().get("name") == "Updated Name"
+    assert get_profile_response.json().get("introduction") == "Updated introduction"
+
     # 오버라이드 초기화
     app.dependency_overrides.clear()
 

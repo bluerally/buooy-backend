@@ -1,5 +1,7 @@
 from pydantic import BaseModel
+from typing import List, Optional
 from parties.models import ParticipationStatus
+from parties.dtos import PartyCommentDetail
 
 
 class PartyParticipationStatusChangeResponse(BaseModel):
@@ -9,3 +11,8 @@ class PartyParticipationStatusChangeResponse(BaseModel):
 
 class PartyCreateResponse(BaseModel):
     party_id: int
+
+
+class TestPartyCommentDetailResponse(BaseModel):
+    comments: List[PartyCommentDetail]
+    user_id: Optional[int] = None
