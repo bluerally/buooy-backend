@@ -22,7 +22,8 @@ def create_access_token(
     if expires_delta:
         expire = _now + expires_delta
     else:
-        expire = _now + timedelta(minutes=30)
+        # expire = _now + timedelta(minutes=30)
+        expire = _now + timedelta(minutes=60 * 24 * 30)
     to_encode.update({"exp": expire})
 
     from common.config import SECRET_KEY, ALGORITHM
