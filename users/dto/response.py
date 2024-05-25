@@ -19,10 +19,13 @@ class SelfProfileResponse(BaseModel):
     # interested_sports: Optional[List[SportInfo]] = None
 
 
-class LoginResponse(BaseModel):
-    user_info: UserInfo
+class TokenInfo(BaseModel):
     access_token: str = ""
     refresh_token: str = ""
+
+
+class LoginResponse(TokenInfo):
+    user_info: UserInfo
 
 
 class AccessTokenResponse(LoginResponse):
@@ -31,3 +34,7 @@ class AccessTokenResponse(LoginResponse):
 
 class RedirectUrlInfoResponse(BaseModel):
     redirect_url: str
+
+
+class TestTokenInfo(TokenInfo):
+    user_id: int

@@ -19,7 +19,12 @@ from common.logging_configs import LoggingAPIRoute
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
-from users.dto.response import AccessTokenResponse, SelfProfileResponse, LoginResponse
+from users.dto.response import (
+    AccessTokenResponse,
+    SelfProfileResponse,
+    LoginResponse,
+    TestTokenInfo,
+)
 from users.dto.request import (
     RedirectUrlInfoResponse,
     AccessTokenRequest,
@@ -347,3 +352,19 @@ async def get_user_profile(
     service = SelfProfileService(user)
     user_profile = await service.get_profile()
     return user_profile
+
+
+@user_router.post(
+    "/test/token", response_model=TestTokenInfo, status_code=status.HTTP_201_CREATED
+)
+async def get_test_access_token(user_id: int) -> TestTokenInfo:
+    access_token = create_access_token(data={"user_id": user_id})
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User not found"
+        )
+    refresh_token = await create_refresh_token(user)
+    return TestTokenInfo(
+        user_id=user_id, access_token=access_token, refresh_token=refresh_token
+    )

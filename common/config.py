@@ -1,12 +1,12 @@
 import logging.config
 from datetime import datetime
-from logging import Handler, LogRecord
+from logging import Handler, LogRecord, StreamHandler
 from os import getenv
 from pathlib import Path
 from typing import Union, Dict, Any
 from zoneinfo import ZoneInfo
 
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 from pymongo.server_api import ServerApi
 from tortoise import Tortoise
 
@@ -72,7 +72,7 @@ TORTOISE_ORM = {
 }
 
 # MONGO DB
-MONGO_URI = getenv("MONGO_URI", default="mongodb://localhost:27017")
+MONGO_URI = getenv("MONGO_URI", default="mongodb://username:password@localhost:27017/")
 MONGO_DATABASE = getenv("MONGODB_DATABASE", "blue-rally")
 MONGO_LOGGING_COLLECTION = "logs"
 
@@ -115,12 +115,20 @@ MONGO_LOGGING_COLLECTION = "logs"
 
 class MongoLogHandler(Handler):
     def __init__(
-        self, uri: str = "", database_name: str = "", collection_name: str = ""
+        self,
+        uri: str = "",
+        database_name: str = "",
+        collection_name: str = "",
     ) -> None:
         super().__init__()
+
         self.client = MongoClient(uri, server_api=ServerApi("1"))
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
+        # TTL 인덱스 설정
+        self.collection.create_index(
+            [("timestamp", DESCENDING)], expireAfterSeconds=60 * 60 * 24 * 7
+        )
 
     def emit(self, record: LogRecord) -> None:
         document = {
@@ -129,19 +137,22 @@ class MongoLogHandler(Handler):
             "message": record.msg,
             "module": record.module,
             "path": record.pathname,
-            "extra": getattr(record, "extra", {}),
         }
         self.collection.insert_one(document)
 
 
 logger = logging.getLogger("blue-rally-log")
 logger.setLevel(logging.INFO)
-mongo_handler = MongoLogHandler(
-    uri=MONGO_URI,
-    database_name=MONGO_DATABASE,
-    collection_name=MONGO_LOGGING_COLLECTION,
-)
+
+if IS_TEST:
+    console_handler = StreamHandler()
+    logger.addHandler(console_handler)
 if not IS_TEST:
+    mongo_handler = MongoLogHandler(
+        uri=MONGO_URI,
+        database_name=MONGO_DATABASE,
+        collection_name=MONGO_LOGGING_COLLECTION,
+    )
     logger.addHandler(mongo_handler)
 
 

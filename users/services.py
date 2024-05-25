@@ -1,12 +1,14 @@
 import os
 from typing import Optional
-from users.models import User
-from users.dto.response import SelfProfileResponse
-from users.models import UserInterestedSport, Sport
-from users.dtos import SportInfo
+
 from fastapi import UploadFile
-from common.utils import s3_upload_file
+
 from common.config import AWS_S3_URL
+from common.utils import s3_upload_file
+from users.dto.response import SelfProfileResponse
+from users.dtos import SportInfo
+from users.models import User
+from users.models import UserInterestedSport, Sport
 
 
 class SelfProfileService:

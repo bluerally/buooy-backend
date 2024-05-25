@@ -43,8 +43,7 @@ class LoggingAPIRoute(APIRoute):
             "queryParams": str(request.query_params),
             "body": body,
         }
-
-        logger.info("request", extra=extra)
+        logger.info(f"Request Info: {extra}")
 
     @staticmethod
     def _response_log(request: Request, response: Response) -> None:
@@ -55,5 +54,4 @@ class LoggingAPIRoute(APIRoute):
             "queryParams": str(request.query_params),
             "body": response.body.decode("UTF-8") if response.body else "",
         }
-
-        logger.info("response", extra=extra)
+        logger.info(f"Response Info: {extra}")
