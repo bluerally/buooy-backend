@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 from zoneinfo import ZoneInfo
 
-from pymongo import MongoClient, DESCENDING
+from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from tortoise import Tortoise
 
@@ -126,9 +126,9 @@ class MongoLogHandler(Handler):
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
         # TTL 인덱스 설정
-        self.collection.create_index(
-            [("timestamp", DESCENDING)], expireAfterSeconds=60 * 60 * 24 * 7
-        )
+        # self.collection.create_index(
+        #     [("timestamp", DESCENDING)], expireAfterSeconds=60 * 60 * 24 * 7
+        # )
 
     def emit(self, record: LogRecord) -> None:
         document = {
