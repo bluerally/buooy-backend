@@ -23,7 +23,6 @@ from users.models import User, Sport, SportName_Pydantic
 from parties.dto.response import (
     PartyParticipationStatusChangeResponse,
     PartyCreateResponse,
-    TestPartyCommentDetailResponse,
 )
 from parties.dto.request import (
     PartyDetailRequest,
@@ -200,21 +199,19 @@ async def get_party_list(
 
 @party_router.get(
     "/{party_id}/comment",
-    # response_model=List[PartyCommentDetail],
-    response_model=TestPartyCommentDetailResponse,
+    response_model=List[PartyCommentDetail],
     status_code=status.HTTP_200_OK,
 )
-async def get_party_comments(request: Request, party_id: int) -> Any:
+async def get_party_comments(
+    request: Request, party_id: int
+) -> List[PartyCommentDetail]:
     user = request.state.user
     try:
         service = PartyCommentService(party_id, user)
         party_comments = await service.get_comments()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    # return party_comments
-    return TestPartyCommentDetailResponse(
-        user_id=user.id if user else None, comments=party_comments
-    )
+    return party_comments
 
 
 @party_router.post(
