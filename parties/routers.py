@@ -3,7 +3,6 @@ from typing import Optional, Any
 
 from fastapi import APIRouter, status, Depends, Request, HTTPException
 from common.logging_configs import LoggingAPIRoute
-from common.config import logger
 from common.dependencies import get_current_user
 from common.utils import convert_string_to_datetime
 from parties.dtos import (
@@ -45,10 +44,7 @@ party_router = APIRouter(
     status_code=status.HTTP_200_OK,
 )
 async def get_sports_list(request: Request) -> Any:
-    try:
-        sports_list = await SportName_Pydantic.from_queryset(Sport.all())
-    except Exception as e:
-        logger.error(f"[ERROR]: Message: {e}")
+    sports_list = await SportName_Pydantic.from_queryset(Sport.all())
     return sports_list
 
 
