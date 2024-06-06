@@ -52,6 +52,7 @@ class NotificationService:
                         FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
                     ),
                     type=notification.type,
+                    classification=notification.classification,
                     related_id=notification.related_id,
                     message=notification.message,
                     is_global=notification.is_global,

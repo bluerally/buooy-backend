@@ -23,6 +23,13 @@ from common.constants import (
     FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS,
     NOTIFICATION_TYPE_PARTY,
+    NOTIFICATION_CLASSIFY_PARTY_COMMENT,
+    NOTIFICATION_CLASSIFY_PARTY_DETAILS_UPDATED,
+    NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_APPLY,
+    NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_APPROVED,
+    NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_REJECTED,
+    NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CANCELED,
+    NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CLOSED,
 )
 from typing import List, Optional, Union
 from tortoise.expressions import Q
@@ -87,6 +94,7 @@ class PartyParticipateService:
         notification_service = NotificationService(self.user)
         notification_info = NotificationSpecificDto(
             type=NOTIFICATION_TYPE_PARTY,
+            classification=NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_APPLY,
             related_id=self.party.id,
             # 알람 메시지 생성
             message=MESSAGE_FORMAT_PARTY_PARTICIPATE.format(
@@ -151,6 +159,9 @@ class PartyParticipateService:
         message = message.format(party=self.party.title)
         notification_info = NotificationSpecificDto(
             type=NOTIFICATION_TYPE_PARTY,
+            classification=NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_APPROVED
+            if new_status == ParticipationStatus.APPROVED
+            else NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_REJECTED,
             related_id=self.party.id,
             message=message,
             is_global=False,
@@ -176,6 +187,7 @@ class PartyParticipateService:
         )
         notification_info = NotificationSpecificDto(
             type=NOTIFICATION_TYPE_PARTY,
+            classification=NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CANCELED,
             related_id=self.party.id,
             message=message,
             is_global=False,
@@ -321,6 +333,9 @@ class PartyDetailService:
             )
             notification_info = NotificationSpecificDto(
                 type=NOTIFICATION_TYPE_PARTY,
+                classification=NOTIFICATION_CLASSIFY_PARTY_DETAILS_UPDATED
+                if self.party.is_active
+                else NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CLOSED,
                 related_id=self.party.id,
                 message=message,
                 is_global=False,
@@ -557,6 +572,7 @@ class PartyCommentService:
                 )
                 notification_info = NotificationSpecificDto(
                     type=NOTIFICATION_TYPE_PARTY,
+                    classification=NOTIFICATION_CLASSIFY_PARTY_COMMENT,
                     related_id=self.party_id,
                     message=message,
                     is_global=False,

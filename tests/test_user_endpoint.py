@@ -327,18 +327,18 @@ async def test_success_get_notifications(client: AsyncClient) -> None:
         notice="카톡 아이디는 audwls624",
     )
     await Notification.create(type="all", message="전체 공지 1", is_global=True)
-    noti_2 = await Notification.create(
+    notice_2 = await Notification.create(
         type="party", related_id=party.id, message="파티 공지1", target_user=user
     )
-    noti_3 = await Notification.create(
+    notice_3 = await Notification.create(
         type="all", message="전체 공지 2", is_global=True
     )
     await Notification.create(
         type="party", related_id=party.id, message="파티 공지1", target_user=user
     )
 
-    await NotificationRead.create(user=user, notification=noti_2)
-    await NotificationRead.create(user=user, notification=noti_3)
+    await NotificationRead.create(user=user, notification=notice_2)
+    await NotificationRead.create(user=user, notification=notice_3)
 
     # 의존성 오버라이드 설정
     from main import app

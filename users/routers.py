@@ -16,19 +16,22 @@ from common.constants import (
 )
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
+from notifications.dto import NotificationDto
+from notifications.service import NotificationService
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
+from users.dto.request import NotificationReadRequest
+from users.dto.request import (
+    RedirectUrlInfoResponse,
+    AccessTokenRequest,
+    RefreshTokenRequest,
+)
 from users.dto.response import (
     AccessTokenResponse,
     SelfProfileResponse,
     LoginResponse,
     TestTokenInfo,
-)
-from users.dto.request import (
-    RedirectUrlInfoResponse,
-    AccessTokenRequest,
-    RefreshTokenRequest,
 )
 from users.dtos import (
     UserInfo,
@@ -47,9 +50,6 @@ from users.utils import (
     create_access_token,
     is_active_refresh_token,
 )
-from notifications.dto import NotificationDto
-from notifications.service import NotificationService
-from users.dto.request import NotificationReadRequest
 
 user_router = APIRouter(
     prefix="/api/user",

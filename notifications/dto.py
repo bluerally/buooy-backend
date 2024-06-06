@@ -4,6 +4,7 @@ from typing import Optional
 
 class NotificationBaseDto(BaseModel):
     type: str
+    classification: Optional[str] = None
     related_id: Optional[int] = None
     message: str
     is_global: bool
