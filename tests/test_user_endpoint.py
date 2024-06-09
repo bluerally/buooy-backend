@@ -328,13 +328,21 @@ async def test_success_get_notifications(client: AsyncClient) -> None:
     )
     await Notification.create(type="all", message="전체 공지 1", is_global=True)
     notice_2 = await Notification.create(
-        type="party", related_id=party.id, message="파티 공지1", target_user=user
+        type="party",
+        related_id=party.id,
+        message="파티 공지1",
+        target_user=user,
+        classification="details_updated",
     )
     notice_3 = await Notification.create(
         type="all", message="전체 공지 2", is_global=True
     )
     await Notification.create(
-        type="party", related_id=party.id, message="파티 공지1", target_user=user
+        type="party",
+        related_id=party.id,
+        message="파티 공지1",
+        target_user=user,
+        classification="details_updated",
     )
 
     await NotificationRead.create(user=user, notification=notice_2)
@@ -348,7 +356,8 @@ async def test_success_get_notifications(client: AsyncClient) -> None:
     response = await client.get("/api/user/notifications")
     # 응답 검증
     assert response.status_code == 200
-    assert response.json()[0].get("related_id") == party.id
+    assert response.json()["notifications"][0].get("related_id") == party.id
+    assert response.json()["total_pages"] == 1
 
 
 @pytest.mark.asyncio

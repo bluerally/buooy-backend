@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
 class NotificationBaseDto(BaseModel):
@@ -24,3 +24,8 @@ class NotificationReadDto(BaseModel):
     user_id: int
     read_at: str
     notification_id: int
+
+
+class NotificationListDto(BaseModel):
+    notifications: List[NotificationDto]
+    total_pages: int

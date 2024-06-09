@@ -16,7 +16,7 @@ from common.constants import (
 )
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
-from notifications.dto import NotificationDto
+from notifications.dto import NotificationListDto
 from notifications.service import NotificationService
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
@@ -318,14 +318,15 @@ async def update_self_profile(
 
 @user_router.get(
     "/notifications",
-    response_model=List[NotificationDto],
+    response_model=NotificationListDto,
     status_code=status.HTTP_200_OK,
 )
 async def get_user_notifications(
-    user: User = Depends(get_current_user)
-) -> List[NotificationDto]:
+    user: User = Depends(get_current_user),
+    page: int = 1,
+) -> NotificationListDto:
     service = NotificationService(user)
-    notification_list = await service.get_user_notifications()
+    notification_list = await service.get_user_notifications(page=page)
     return notification_list
 
 
