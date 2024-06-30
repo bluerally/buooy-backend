@@ -1,4 +1,5 @@
 import uuid
+import traceback
 from typing import List, Optional, Any, Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends, Request
@@ -166,10 +167,11 @@ async def social_auth_callback(
             return RedirectResponse(
                 url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
             )
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.error(f"[AUTH CALLBACK] Exception occurred: {traceback.format_exc()}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error ocurred from login callback",
         )
 
 
