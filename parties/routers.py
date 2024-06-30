@@ -167,9 +167,12 @@ async def organizer_change_participation_status(
     status_code=status.HTTP_200_OK,
 )
 async def get_party_details(party_id: int, request: Request) -> PartyDetail:
-    user = request.state.user
-    service = await PartyDetailService.create(party_id)
-    party_details = await service.get_party_details(user)
+    try:
+        user = request.state.user
+        service = await PartyDetailService.create(party_id)
+        party_details = await service.get_party_details(user)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return party_details
 
 

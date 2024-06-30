@@ -727,6 +727,7 @@ class PartyLikeService:
             .select_related("party", "party__organizer_user", "party__sport")
             .offset(offset)
             .limit(limit)
+            .order_by("-id")
         )
         liked_party_info_list = [
             await self._build_party_info(liked_party.party)
