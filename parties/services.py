@@ -716,9 +716,17 @@ class PartyLikeService:
             latitude=party.latitude,
         )
 
-    async def get_liked_parties(self) -> List[PartyListDetail]:
-        liked_parties = await PartyLike.filter(user=self.user).select_related(
-            "party", "party__organizer_user", "party__sport"
+    async def get_liked_parties(
+        self, page: int = 1, page_size: int = 8
+    ) -> List[PartyListDetail]:
+        # 페이징 계산
+        offset = (page - 1) * page_size
+        limit = page_size
+        liked_parties = (
+            await PartyLike.filter(user=self.user)
+            .select_related("party", "party__organizer_user", "party__sport")
+            .offset(offset)
+            .limit(limit)
         )
         liked_party_info_list = [
             await self._build_party_info(liked_party.party)

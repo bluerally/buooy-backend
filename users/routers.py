@@ -277,10 +277,11 @@ async def get_certificate_levels(certificate_id: int) -> Any:
 )
 async def get_liked_parties(
     user: User = Depends(get_current_user),
+    page: int = 1,
 ) -> List[PartyListDetail]:
     service = PartyLikeService(user)
     try:
-        return await service.get_liked_parties()
+        return await service.get_liked_parties(page=page)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
