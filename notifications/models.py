@@ -4,7 +4,7 @@ from common.models import BaseModel
 
 class Notification(BaseModel):
     type = fields.CharField(max_length=100, null=True)
-    classification = fields.CharField(max_length=100, default="")
+    classification = fields.CharField(max_length=100, default="", null=True)
     related_id = fields.BigIntField(null=True)
     message = fields.TextField(null=True)
     is_global = fields.BooleanField(default=False)

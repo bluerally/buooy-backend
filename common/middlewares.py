@@ -15,8 +15,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = request.headers.get("Authorization")
         request.state.user = None
         if token and token.startswith("Bearer "):
-            token = token.split(" ")[1]
             try:
+                token = token.split(" ")[1]
                 payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
                 user_id = payload.get("user_id")
                 if user_id:

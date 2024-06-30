@@ -15,6 +15,7 @@ from common.middlewares import AuthMiddleware
 from parties.routers import party_router
 from users.routers import user_router
 from common.logging_configs import LoggingAPIRoute
+from feedback.views import feedback_router
 
 
 @asynccontextmanager
@@ -53,9 +54,10 @@ test_router = APIRouter(
     route_class=LoggingAPIRoute,
 )
 
-# # router include
+# router include
 app.include_router(user_router)
 app.include_router(party_router)
+app.include_router(feedback_router)
 
 
 # Swagger UI 권한 설정

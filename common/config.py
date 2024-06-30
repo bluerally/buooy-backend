@@ -37,6 +37,7 @@ MODELS_PATH = [
     "parties.models",
     "aerich.models",
     "notifications.models",
+    "feedback.models",
 ]
 
 SQLITE_DB_URL = f"sqlite://{BASE_DIR}/db.sqlite3"
