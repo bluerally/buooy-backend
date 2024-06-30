@@ -15,6 +15,7 @@ from google.oauth2 import id_token
 
 from users.dtos import UserInfo
 from users.utils import validate_kakao_id_token
+from common.config import logger
 
 
 class SocialLogin(ABC):
@@ -158,6 +159,10 @@ class KakaoAuth(SocialLogin):
                     detail=f"Request error: {str(e)}",
                 )
             except httpx.HTTPStatusError as e:
+                logger.error(
+                    f"HTTP error: {e.response.status_code} for url {e.request.url}"
+                )
+                logger.error(f"Response content: {e.response.content}")
                 raise HTTPException(
                     status_code=e.response.status_code, detail=f"HTTP error: {str(e)}"
                 )
