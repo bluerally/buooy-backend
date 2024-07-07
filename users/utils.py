@@ -98,8 +98,8 @@ async def validate_kakao_id_token(
                 return decoded_id_token
             if payload_data.get("exp") < datetime.now(UTC).timestamp():
                 return decoded_id_token
-            if payload_data.get("nonce") != session_nonce:
-                return decoded_id_token
+            # if payload_data.get("nonce") != session_nonce:
+            #     return decoded_id_token
         except Exception as e:
             logging.error(f"Payload processing error: {e}")
             pass

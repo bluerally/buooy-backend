@@ -171,7 +171,7 @@ async def social_auth_callback(
         logger.error(f"[AUTH CALLBACK] Exception occurred: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error ocurred from login callback",
+            detail="Error occurred from login callback",
         )
 
 

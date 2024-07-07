@@ -6,6 +6,7 @@ echo "" > $DEPLOY_LOG
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 시작" >> $DEPLOY_LOG
 
+# shellcheck disable=SC2164
 cd /home/ec2-user/app
 
 # .env 파일 생성 또는 초기화
