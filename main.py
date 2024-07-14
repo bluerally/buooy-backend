@@ -76,7 +76,7 @@ async def health_check() -> str:
     return "Health Check Succeed!"
 
 
-@app.get("/api")
+@app.get("/api/health")
 async def api_health_check() -> str:
     return "API Health Check Succeed!"
 
