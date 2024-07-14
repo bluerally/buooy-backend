@@ -15,7 +15,7 @@ from common.middlewares import AuthMiddleware
 from parties.routers import party_router
 from users.routers import user_router
 from common.logging_configs import LoggingAPIRoute
-from feedback.views import feedback_router
+from feedback.routers import feedback_router
 
 
 @asynccontextmanager
@@ -36,7 +36,6 @@ origins = [
     "http://127.0.0.1:80",
     "https://www.bluerally.net",
     "http://localhost:3000",
-    "https://localhost:3001",
 ]
 
 # Middleware
@@ -61,19 +60,19 @@ app.include_router(feedback_router)
 
 
 # Swagger UI 권한 설정
-@app.get("/docs", include_in_schema=False)
+@app.get("/api/docs", include_in_schema=False)
 async def get_documentation(admin: str = Depends(get_admin)) -> HTMLResponse:
-    return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
+    return get_swagger_ui_html(openapi_url="/api/openapi.json", title="docs")
 
 
-@app.get("/openapi.json", include_in_schema=False)
+@app.get("/api/openapi.json", include_in_schema=False)
 async def openapi(admin: str = Depends(get_admin)) -> Any:
     return app.openapi()
 
 
-@app.get("/")
-async def health_check() -> str:
-    return "Health Check Succeed!"
+# @app.get("/")
+# async def health_check() -> str:
+#     return "Health Check Succeed!"
 
 
 @app.get("/api/health")
