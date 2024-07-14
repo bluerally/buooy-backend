@@ -76,5 +76,10 @@ async def health_check() -> str:
     return "Health Check Succeed!"
 
 
+@app.get("/api")
+async def api_health_check() -> str:
+    return "API Health Check Succeed!"
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
