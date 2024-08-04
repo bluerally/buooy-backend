@@ -1,5 +1,6 @@
 from typing import List
 from typing import Optional, Any
+from common.config import logger
 
 from fastapi import APIRouter, status, Depends, Request, HTTPException
 
@@ -44,7 +45,11 @@ party_router = APIRouter(
     status_code=status.HTTP_200_OK,
 )
 async def get_sports_list(request: Request) -> Any:
-    sports_list = await SportName_Pydantic.from_queryset(Sport.all())
+    try:
+        sports_list = await SportName_Pydantic.from_queryset(Sport.all())
+    except Exception as e:
+        logger.error(f"[LAMBDA LOG]: Error: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return sports_list
 
 
