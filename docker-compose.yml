@@ -10,8 +10,8 @@ services:
       - .env
     volumes:
       - /home/ec2-user/logs:/app/logs
-    networks:
-      - bluerally-network
+#    networks:
+#      - bluerally-network
   nginx:
     image: nginx:latest
     container_name: nginx_proxy
@@ -22,10 +22,9 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - app
-    networks:
-      - bluerally-network
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-networks:
-  bluerally-network:
-    external: true
+#    networks:
+#      - bluerally-network
+
+#networks:
+#  bluerally-network:
+#    external: true
