@@ -24,8 +24,8 @@ services:
       - app
     networks:
       - bluerally-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 networks:
   bluerally-network:
     external: true
