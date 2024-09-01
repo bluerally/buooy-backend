@@ -31,12 +31,13 @@ app = FastAPI(lifespan=lifespan, docs_url=None)
 templates = Jinja2Templates(directory="templates")
 
 origins = [
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:80",
-    "https://www.bluerally.net",
-    "http://localhost:3000",
-    "https://bluerally-fe-git-main-kimnamsuns-projects.vercel.app",
+    # "http://127.0.0.1:8000",
+    # "http://127.0.0.1:8080",
+    # "http://127.0.0.1:80",
+    # "https://www.bluerally.net",
+    # "http://localhost:3000",
+    # "https://bluerally-fe-git-main-kimnamsuns-projects.vercel.app",
+    "*"
 ]
 
 # Middleware
