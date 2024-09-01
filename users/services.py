@@ -40,8 +40,7 @@ class SelfProfileService:
         name: Optional[str] = None,
         email: Optional[str] = None,
         introduction: Optional[str] = None,
-        interested_sports_ids: Optional[str] = None,
-        profile_image: Optional[UploadFile] = None,
+        interested_sports_ids: Optional[list[int]] = None,
     ) -> SelfProfileResponse:
         if name is not None:
             self.user.name = name
@@ -52,10 +51,18 @@ class SelfProfileService:
 
         if interested_sports_ids is not None:
             await UserInterestedSport.filter(user=self.user).delete()
-            for sport_id in interested_sports_ids.split(","):
+            for sport_id in interested_sports_ids:
                 sport = await Sport.get(id=int(sport_id))
                 await UserInterestedSport.create(user=self.user, sport=sport)
 
+        await self.user.save()
+
+        return await self.get_profile()
+
+    async def update_profile_image(
+        self,
+        profile_image: Optional[UploadFile] = None,
+    ) -> SelfProfileResponse:
         if profile_image:
             folder = f"user/{self.user.id}/profile_image"
             image_url = await s3_upload_file(folder, profile_image)

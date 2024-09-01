@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class RedirectUrlInfoResponse(BaseModel):
@@ -15,3 +16,10 @@ class AccessTokenRequest(BaseModel):
 
 class NotificationReadRequest(BaseModel):
     read_notification_list: list[int]
+
+
+class UserProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    introduction: Optional[str] = None
+    interested_sports_ids: Optional[list[int]] = None

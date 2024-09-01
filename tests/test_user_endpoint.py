@@ -265,30 +265,22 @@ async def test_update_self_profile(
 
     app.dependency_overrides[get_current_user] = lambda: user
 
-    fake_image = io.BytesIO(b"test image")
-    fake_image.seek(0)
-    files = {
-        "profile_image": ("mock_image.jpg", fake_image, "image/jpeg"),
-    }
-
     # 업데이트할 프로필 정보
     profile_data = {
         "name": "Updated Name",
         "introduction": "Updated introduction",
-        "interested_sports_ids": f"{sport_1.id},{sport_2.id}",
+        "email": "test-mail@gmail.com",
+        "interested_sports_ids": [sport_1.id, sport_2.id],
     }
 
     # API 호출
-    response = await client.post("/api/user/me", data=profile_data, files=files)
+    response = await client.post("/api/user/me", json=profile_data)
 
     # 응답 검증
     assert response.status_code == status.HTTP_201_CREATED
 
     updated_user = await User.get(id=user.id)
     assert updated_user.name == "Updated Name"
-    assert (
-        updated_user.profile_image == "user1/profile-image/fakeimage.jpg"
-    )  # Mock에서 반환된 URL
     interested_sports = await UserInterestedSport.filter(user=user).all()
     assert len(interested_sports) == 2
     assert response.json()["interested_sports"][0] == {
@@ -301,6 +293,43 @@ async def test_update_self_profile(
     assert get_profile_response.status_code == status.HTTP_200_OK
     assert get_profile_response.json().get("name") == "Updated Name"
     assert get_profile_response.json().get("introduction") == "Updated introduction"
+
+    # 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_update_self_profile_image(
+    client: AsyncClient, mock_s3_upload: AsyncMock
+) -> None:
+    # 유저와 관심 스포츠 생성
+    user = await User.create(
+        email="user@example.com",
+        name="Test User",
+        profile_image="user/1/original.jpg",
+    )
+
+    # 의존성 오버라이드 설정
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    fake_image = io.BytesIO(b"test image")
+    fake_image.seek(0)
+    files = {
+        "profile_image": ("mock_image.jpg", fake_image, "image/jpeg"),
+    }
+
+    # API 호출
+    response = await client.post("/api/user/me/profile-image", files=files)
+
+    # 응답 검증
+    assert response.status_code == status.HTTP_201_CREATED
+
+    updated_user = await User.get(id=user.id)
+    assert (
+        updated_user.profile_image == "user1/profile-image/fakeimage.jpg"
+    )  # Mock에서 반환된 URL
 
     # 오버라이드 초기화
     app.dependency_overrides.clear()
