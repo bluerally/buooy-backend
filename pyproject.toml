@@ -37,6 +37,7 @@ email-validator = "^2.1.1"
 python-multipart = "^0.0.9"
 motor = "^3.3.2"
 pymongo = {extras = ["srv"], version = "^4.6.3"}
+apscheduler = "^3.10.4"
 
 
 [tool.poetry.group.dev.dependencies]
