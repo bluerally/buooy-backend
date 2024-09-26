@@ -16,13 +16,13 @@ from parties.routers import party_router
 from users.routers import user_router
 from common.logging_configs import LoggingAPIRoute
 from feedback.routers import feedback_router
-from common.scheduler import start_scheduler, scheduler
+from common.scheduler import scheduler
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     await Tortoise.init(config=TORTOISE_ORM, timezone="Asia/Seoul")
-    start_scheduler()
+    # start_scheduler()
     yield
     scheduler.shutdown()
     await Tortoise.close_connections()
