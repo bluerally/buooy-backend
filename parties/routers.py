@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional, Any
 from common.config import logger
 
-from fastapi import APIRouter, status, Depends, Request, HTTPException
+from fastapi import APIRouter, status, Depends, Request, HTTPException, Query
 
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
@@ -185,7 +185,7 @@ async def get_party_details(party_id: int, request: Request) -> PartyDetail:
 )
 async def get_party_list(
     request: Request,
-    sport_id: Optional[int] = None,
+    sport_id: Optional[List[int]] = Query(None),
     is_active: Optional[bool] = None,
     gather_date_min: Optional[str] = None,
     gather_date_max: Optional[str] = None,
@@ -195,7 +195,7 @@ async def get_party_list(
     user = request.state.user
     service = PartyListService(user)
     party_list = await service.get_party_list(
-        sport_id=sport_id,
+        sport_id_list=sport_id,
         is_active=is_active,
         gather_date_min=gather_date_min,
         gather_date_max=gather_date_max,

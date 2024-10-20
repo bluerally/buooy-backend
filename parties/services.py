@@ -368,7 +368,7 @@ class PartyListService:
 
     async def get_party_list(
         self,
-        sport_id: Optional[int] = None,
+        sport_id_list: Optional[List[int]] = None,
         is_active: Optional[bool] = None,
         gather_date_min: Optional[str] = None,
         gather_date_max: Optional[str] = None,
@@ -379,8 +379,8 @@ class PartyListService:
         try:
             query = Q()
 
-            if sport_id is not None:
-                query &= Q(sport_id=sport_id)
+            if sport_id_list is not None:
+                query &= Q(sport_id__in=sport_id_list)
 
             if is_active:
                 query &= Q(is_active=True)
