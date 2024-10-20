@@ -28,7 +28,8 @@ async def s3_upload_file(folder: str, file: UploadFile) -> str:
     if not ext:
         raise ValueError("No file extension found in the uploaded file.")
 
-    filename = f"{folder}/{datetime.now(ZoneInfo("UTC"))}{ext}"
+    timestamp = datetime.now(ZoneInfo("UTC")).strftime("%Y%m%d%H%M%S%f")
+    filename = f"{folder}/{timestamp}{ext}"
 
     session = aioboto3.Session()
     from common.config import AWS_S3_ACCESS_KEY, AWS_S3_SECRET_KEY, S3_BUCKET
