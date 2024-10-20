@@ -8,7 +8,7 @@ from parties.models import (
     PartyLike,
 )
 from users.models import User
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from parties.dtos import (
     ParticipantProfile,
     PartyDetail,
@@ -21,7 +21,6 @@ from common.constants import (
     FORMAT_HH_MM,
     FORMAT_YYYY_MM_DD,
     FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ,
-    FORMAT_YYYY_MM_DD_T_HH_MM_SS,
     NOTIFICATION_TYPE_PARTY,
     NOTIFICATION_CLASSIFY_PARTY_COMMENT,
     NOTIFICATION_CLASSIFY_PARTY_DETAILS_UPDATED,
@@ -30,6 +29,7 @@ from common.constants import (
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_REJECTED,
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CANCELED,
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CLOSED,
+    FORMAT_YYYYMMDD,
 )
 from typing import List, Optional, Union
 from tortoise.expressions import Q
@@ -70,9 +70,9 @@ class PartyParticipateService:
         if self.is_user_organizer():
             raise ValueError("Organizer can not participate")
 
-        # 마감 시간이 지났는 지 확인
-        if self.party.due_at < datetime.now(UTC):
-            raise ValueError("Cannot participate after the due date.")
+        # 만남 시간이 지났는 지 확인
+        if self.party.gather_at < datetime.now(UTC):
+            raise ValueError("Cannot participate after the gather date.")
 
         # 해당 파티에 참여 신청 여부 확인.
         existing_participation = await PartyParticipant.get_or_none(
@@ -269,7 +269,6 @@ class PartyDetailService:
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=participants_info,
-            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(
@@ -307,7 +306,7 @@ class PartyDetailService:
         # 각 필드를 업데이트
         for field, value in update_info.__dict__.items():
             if value is not None and hasattr(self.party, field):
-                if field in ("gather_at", "due_at"):
+                if field == "gather_at":
                     try:
                         value = datetime.strptime(
                             value, FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
@@ -351,7 +350,6 @@ class PartyDetailService:
             title=self.party.title,
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
-            due_date=self.party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(
@@ -389,8 +387,9 @@ class PartyListService:
                 query &= Q(is_active=True)
 
             if gather_date_min:
-                gather_at_min = datetime.strptime(
-                    gather_date_min, FORMAT_YYYY_MM_DD_T_HH_MM_SS
+                gather_at_min = datetime.strptime(gather_date_min, FORMAT_YYYYMMDD)
+                gather_at_min = gather_at_min.replace(
+                    hour=0, minute=0, second=0, microsecond=0
                 )
                 gather_at_min_with_tz = gather_at_min.replace(
                     tzinfo=ZoneInfo(TIME_ZONE)
@@ -398,13 +397,15 @@ class PartyListService:
                 query &= Q(gather_at__gte=gather_at_min_with_tz)
 
             if gather_date_max:
-                gather_at_max = datetime.strptime(
-                    gather_date_max, FORMAT_YYYY_MM_DD_T_HH_MM_SS
+                gather_at_max = datetime.strptime(gather_date_max, FORMAT_YYYYMMDD)
+                gather_at_max += timedelta(days=1)
+                gather_at_max = gather_at_max.replace(
+                    hour=0, minute=0, second=0, microsecond=0
                 )
                 gather_at_max_with_tz = gather_at_max.replace(
                     tzinfo=ZoneInfo(TIME_ZONE)
                 )
-                query &= Q(gather_at__lte=gather_at_max_with_tz)
+                query &= Q(gather_at__lt=gather_at_max_with_tz)
 
             if search_query:
                 # TODO 쿼리 개선 필요
@@ -490,7 +491,6 @@ class PartyListService:
             gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=f"{approved_participants}/{party.participant_limit}",
-            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=party.participant_cost,
             body=party.body,
             organizer_profile=UserSimpleProfile(
@@ -698,7 +698,6 @@ class PartyLikeService:
             gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=party.gather_at.strftime(FORMAT_HH_MM),
             participants_info=f"{approved_participants}/{party.participant_limit}",
-            due_date=party.due_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
             price=party.participant_cost,
             body=party.body,
             organizer_profile=UserSimpleProfile(

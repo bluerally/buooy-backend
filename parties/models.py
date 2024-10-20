@@ -9,7 +9,6 @@ class Party(BaseModel):
     gather_at = fields.DatetimeField(
         null=True, blank=True, index=True, description="모임 날짜"
     )
-    due_at = fields.DatetimeField(null=True, blank=True, description="마감 날짜")
     place_id = fields.BigIntField(null=True, blank=True)
     place_name = fields.CharField(null=True, blank=True, max_length=255)
     address = fields.CharField(null=True, blank=True, max_length=255)

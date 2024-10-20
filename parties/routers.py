@@ -64,7 +64,6 @@ async def create_party(
             title=request_data.title,
             body=request_data.body,
             gather_at=convert_string_to_datetime(request_data.gather_at),
-            due_at=convert_string_to_datetime(request_data.due_at),
             place_id=request_data.place_id,
             place_name=request_data.place_name,
             address=request_data.address,

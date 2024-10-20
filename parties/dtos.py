@@ -14,7 +14,6 @@ class PartyInfo(BaseModel):
     sport_name: str
     gather_date: str
     gather_time: str
-    due_date: str
     price: int
     body: str
     organizer_profile: UserSimpleProfile

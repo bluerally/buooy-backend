@@ -162,7 +162,6 @@ async def test_success_get_liked_parties(client: AsyncClient) -> None:
     party_1 = await Party.create(
         title="Test Party",
         created_at=datetime.now(),
-        due_at=datetime.now() + timedelta(days=3),
         gather_at=datetime.now() + timedelta(days=2),
         body="Test Party Body",
         organizer_user=organizer,
@@ -177,7 +176,6 @@ async def test_success_get_liked_parties(client: AsyncClient) -> None:
         title="Test Party2",
         body="Test Party Body",
         created_at=datetime.now(),
-        due_at=datetime.now() + timedelta(days=3),
         gather_at=datetime.now() + timedelta(days=2),
         organizer_user=organizer,
         sport=sport,
@@ -349,7 +347,6 @@ async def test_success_get_notifications(client: AsyncClient) -> None:
         body="Freediving Party body",
         organizer_user=user,
         gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=2),
-        due_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
         participant_limit=5,
         participant_cost=200,
         sport=sport,
