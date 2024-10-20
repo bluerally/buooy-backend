@@ -29,7 +29,6 @@ from common.constants import (
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_REJECTED,
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CANCELED,
     NOTIFICATION_CLASSIFY_PARTY_PARTICIPATION_CLOSED,
-    FORMAT_YYYYMMDD,
 )
 from typing import List, Optional, Union
 from tortoise.expressions import Q
@@ -387,7 +386,7 @@ class PartyListService:
                 query &= Q(is_active=True)
 
             if gather_date_min:
-                gather_at_min = datetime.strptime(gather_date_min, FORMAT_YYYYMMDD)
+                gather_at_min = datetime.strptime(gather_date_min, FORMAT_YYYY_MM_DD)
                 gather_at_min = gather_at_min.replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
@@ -397,7 +396,7 @@ class PartyListService:
                 query &= Q(gather_at__gte=gather_at_min_with_tz)
 
             if gather_date_max:
-                gather_at_max = datetime.strptime(gather_date_max, FORMAT_YYYYMMDD)
+                gather_at_max = datetime.strptime(gather_date_max, FORMAT_YYYY_MM_DD)
                 gather_at_max += timedelta(days=1)
                 gather_at_max = gather_at_max.replace(
                     hour=0, minute=0, second=0, microsecond=0
