@@ -34,7 +34,8 @@ async def test_success_party_create(client: AsyncClient) -> None:
     request_data = {
         "title": "test title",
         "body": "test body",
-        "gather_at": "2023-12-27T17:13:40+09:00",
+        "gather_date": "2023-12-27",
+        "gather_time": "17:13",
         "place_id": 123314252353,
         "place_name": "딥스테이션",
         "address": "경기도 용인시 처인구 90길 90",
@@ -100,7 +101,8 @@ async def test_success_party_update(client: AsyncClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
 
     request_data = {
-        "gather_at": "2024-02-03T08:30:00+09:00",
+        "gather_date": "2024-02-03",
+        "gather_time": "08:30",
     }
     # API 호출
     response = await client.post(f"/api/party/{party.id}", json=request_data)
@@ -108,7 +110,7 @@ async def test_success_party_update(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == status.HTTP_200_OK
     assert updated_party.gather_at == datetime.strptime(
-        request_data["gather_at"], FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+        "2024-02-03T08:30:00+09:00", FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
     )
     assert (
         await Notification.get_or_none(

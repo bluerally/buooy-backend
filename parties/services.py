@@ -300,21 +300,28 @@ class PartyDetailService:
         self, user: User, update_info: PartyUpdateRequest
     ) -> PartyUpdateInfo:
         if self.party.organizer_user_id != user.id:
-            raise PermissionError("user(user.id) is not party organizer")
+            raise PermissionError(f"user{user.id} is not party organizer")
+
+        if update_info.gather_time and update_info.gather_date:
+            try:
+                gather_at_str = (
+                    f"{update_info.gather_date}T{update_info.gather_time}:00+09:00"
+                )
+                gather_at = datetime.strptime(
+                    gather_at_str, FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
+                )
+            except Exception as e:
+                raise ValueError(
+                    f"field: {gather_at_str}, format is in valid({FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ}), error: {e}"
+                )
+            self.party.gather_at = gather_at
 
         # 각 필드를 업데이트
         for field, value in update_info.__dict__.items():
-            if value is not None and hasattr(self.party, field):
-                if field == "gather_at":
-                    try:
-                        value = datetime.strptime(
-                            value, FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
-                        )
-                    except Exception as e:
-                        raise ValueError(
-                            f"field: {field}, format is in valid({FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ}), error: {e}"
-                        )
-                setattr(self.party, field, value)
+            if value is None or not hasattr(self.party, field):
+                continue
+
+            setattr(self.party, field, value)
 
         # 업데이트된 내용 저장
         await self.party.save()

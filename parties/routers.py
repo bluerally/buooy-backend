@@ -60,10 +60,11 @@ async def create_party(
     request_data: PartyDetailRequest, user: User = Depends(get_current_user)
 ) -> PartyCreateResponse:
     try:
+        gather_at_str = f"{request_data.gather_date}T{request_data.gather_time}:00+09:00"  # TODO 처리방법 변경 필요
         party = await Party.create(
             title=request_data.title,
             body=request_data.body,
-            gather_at=convert_string_to_datetime(request_data.gather_at),
+            gather_at=convert_string_to_datetime(gather_at_str),
             place_id=request_data.place_id,
             place_name=request_data.place_name,
             address=request_data.address,
