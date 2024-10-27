@@ -494,8 +494,12 @@ class PartyListService:
             id=party.id,
             sport_name=party.sport.name,
             title=party.title,
-            gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD),
-            gather_time=party.gather_at.strftime(FORMAT_HH_MM),
+            gather_date=party.gather_at.strftime(FORMAT_YYYY_MM_DD)
+            if party.gather_at
+            else "one",
+            gather_time=party.gather_at.strftime(FORMAT_HH_MM)
+            if party.gather_at
+            else "",
             participants_info=f"{approved_participants}/{party.participant_limit}",
             price=party.participant_cost,
             body=party.body,
@@ -504,7 +508,9 @@ class PartyListService:
                 name=party.organizer_user.name,
                 user_id=party.organizer_user_id,
             ),
-            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ),
+            posted_date=party.created_at.strftime(FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ)
+            if party.created_at
+            else "",
             is_user_organizer=self.user.id == party.organizer_user_id
             if self.user
             else False,
