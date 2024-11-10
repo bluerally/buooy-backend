@@ -1,4 +1,4 @@
-from fastapi import Request, Response
+from fastapi import Request, Response, FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
 from users.models import User
 
@@ -44,3 +44,22 @@ class AuthMiddleware(BaseHTTPMiddleware):
             #     raise HTTPException(status_code=403, detail=str(e))
         response = await call_next(request)
         return response
+
+
+class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
+    # 파일 용량 제한 미들웨어 정의
+    def __init__(self, app: FastAPI, max_upload_size: int) -> None:
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        content_length = request.headers.get("content-length")
+        if content_length:
+            if int(content_length) > self.max_upload_size:
+                return Response(
+                    content="파일 크기가 너무 큽니다.",
+                    status_code=413,  # Payload Too Large
+                )
+        return await call_next(request)
