@@ -33,6 +33,7 @@ from users.dto.response import (
     SelfProfileResponse,
     LoginResponse,
     TestTokenInfo,
+    UserPartyStatisticsResponse,
 )
 from users.dtos import (
     UserInfo,
@@ -385,3 +386,16 @@ async def get_test_access_token(user_id: int) -> TestTokenInfo:
     return TestTokenInfo(
         user_id=user_id, access_token=access_token, refresh_token=refresh_token
     )
+
+
+@user_router.post(
+    "/party/stats",
+    response_model=UserPartyStatisticsResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_party_statisics(
+    user: User = Depends(get_current_user)
+) -> UserPartyStatisticsResponse:
+    service = SelfProfileService(user)
+    stats = await service.get_party_statistics()
+    return stats

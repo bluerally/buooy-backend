@@ -1,4 +1,5 @@
 import io
+import os
 from datetime import datetime, timedelta
 from typing import Callable, Any, Coroutine
 from unittest.mock import patch, Mock, AsyncMock
@@ -12,9 +13,10 @@ from httpx import AsyncClient
 from pytest import MonkeyPatch
 from starlette import status
 
+from common.config import AWS_S3_URL
 from common.dependencies import get_current_user
 from notifications.models import Notification, NotificationRead
-from parties.models import Party, PartyLike
+from parties.models import Party, PartyLike, PartyParticipant, ParticipationStatus
 from users.auth import GoogleAuth
 from users.models import User, UserToken, Sport, UserInterestedSport
 
@@ -325,8 +327,8 @@ async def test_update_self_profile_image(
     assert response.status_code == status.HTTP_201_CREATED
 
     updated_user = await User.get(id=user.id)
-    assert (
-        updated_user.profile_image == "user1/profile-image/fakeimage.jpg"
+    assert updated_user.profile_image == os.path.join(
+        AWS_S3_URL, "user1/profile-image/fakeimage.jpg"
     )  # Mock에서 반환된 URL
 
     # 오버라이드 초기화
@@ -439,3 +441,130 @@ async def test_success_get_user_profile(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == 200
     assert response.json().get("introduction") == "안녕하세요"
+
+
+@pytest.mark.asyncio
+async def test_get_user_party_statistics(client: AsyncClient) -> None:
+    # Create a user
+    user = await User.create(
+        email="user@example.com",
+        sns_id="user_sns_id",
+        name="Test User",
+        profile_image="https://path/to/image",
+    )
+
+    # Create another user (organizer)
+    organizer = await User.create(
+        email="organizer@example.com",
+        sns_id="organizer_sns_id",
+        name="Organizer User",
+        profile_image="https://path/to/image",
+    )
+
+    # Create a sport
+    sport = await Sport.create(name="Test Sport")
+
+    # Create parties where the user is the organizer
+    await Party.create(
+        title="User's Party 1",
+        body="Party Body 1",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=2),
+        organizer_user=user,
+        sport=sport,
+        participant_limit=10,
+        participant_cost=100,
+        place_id=1111,
+        place_name="Place 1",
+        address="Address 1",
+        longitude=37.1234,
+        latitude=127.5678,
+    )
+
+    await Party.create(
+        title="User's Party 2",
+        body="Party Body 2",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=3),
+        organizer_user=user,
+        sport=sport,
+        participant_limit=15,
+        participant_cost=150,
+        place_id=2222,
+        place_name="Place 2",
+        address="Address 2",
+        longitude=37.5678,
+        latitude=127.1234,
+    )
+
+    # Create parties where the user is a participant
+    party3 = await Party.create(
+        title="Organizer's Party",
+        body="Party Body 3",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=4),
+        organizer_user=organizer,
+        sport=sport,
+        participant_limit=20,
+        participant_cost=200,
+        place_id=3333,
+        place_name="Place 3",
+        address="Address 3",
+        longitude=36.1234,
+        latitude=126.5678,
+    )
+
+    await PartyParticipant.create(
+        participant_user=user,
+        party=party3,
+        status=ParticipationStatus.APPROVED,
+    )
+
+    # Create parties that the user has liked
+    party4 = await Party.create(
+        title="Liked Party 1",
+        body="Party Body 4",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=5),
+        organizer_user=organizer,
+        sport=sport,
+        participant_limit=25,
+        participant_cost=250,
+        place_id=4444,
+        place_name="Place 4",
+        address="Address 4",
+        longitude=35.1234,
+        latitude=125.5678,
+    )
+
+    party5 = await Party.create(
+        title="Liked Party 2",
+        body="Party Body 5",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=6),
+        organizer_user=organizer,
+        sport=sport,
+        participant_limit=30,
+        participant_cost=300,
+        place_id=5555,
+        place_name="Place 5",
+        address="Address 5",
+        longitude=34.1234,
+        latitude=124.5678,
+    )
+
+    await PartyLike.create(user=user, party=party4)
+    await PartyLike.create(user=user, party=party5)
+
+    # Override dependency to use the created user
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # Call the API endpoint
+    response = await client.post("/api/user/party/stats")
+
+    # Assert the response
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+    assert response_json["created_count"] == 2  # User organized 2 parties
+    assert response_json["participated_count"] == 1  # User participated in 1 party
+    assert response_json["liked_count"] == 2  # User liked 2 parties
+
+    # Clean up dependency overrides
+    app.dependency_overrides.clear()

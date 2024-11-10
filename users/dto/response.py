@@ -38,3 +38,9 @@ class RedirectUrlInfoResponse(BaseModel):
 
 class TestTokenInfo(TokenInfo):
     user_id: int
+
+
+class UserPartyStatisticsResponse(BaseModel):
+    created_count: int
+    participated_count: int
+    liked_count: int
