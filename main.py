@@ -11,7 +11,7 @@ from tortoise import Tortoise
 
 from common.config import TORTOISE_ORM
 from common.dependencies import get_admin
-from common.middlewares import AuthMiddleware, LimitUploadSizeMiddleware
+from common.middlewares import AuthMiddleware
 from parties.routers import party_router
 from users.routers import user_router
 from common.logging_configs import LoggingAPIRoute
@@ -52,10 +52,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuthMiddleware)
-app.add_middleware(
-    LimitUploadSizeMiddleware,
-    max_upload_size=10 * 1024 * 1024,  # 10MB
-)
+# app.add_middleware(
+#     LimitUploadSizeMiddleware,
+#     max_upload_size=10 * 1024 * 1024,  # 10MB
+# )
 
 test_router = APIRouter(
     prefix="/api/test",
