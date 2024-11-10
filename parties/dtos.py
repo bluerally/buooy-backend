@@ -36,7 +36,8 @@ class PartyListDetail(PartyInfo):
 
 
 class PartyDetail(PartyInfo):
-    participants_info: str
+    max_participants: int
+    current_participants: int
     is_user_organizer: bool = False
     pending_participants: Optional[List[ParticipantProfile]] = None
     approved_participants: Optional[List[ParticipantProfile]] = None

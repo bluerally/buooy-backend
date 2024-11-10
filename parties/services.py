@@ -256,18 +256,14 @@ class PartyDetailService:
                 )
                 participants_id_list.append(participant.participant_user.id)
 
-        participants_info = (
-            # 파티장 포함
-            f"{len(approved_participants) + 1}/{self.party.participant_limit}"
-        )
-
         return PartyDetail(
             id=self.party.id,
             sport_name=self.party.sport.name,
             title=self.party.title,
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
-            participants_info=participants_info,
+            max_participants=self.party.participant_limit,
+            current_participants=len(approved_participants) + 1,
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(

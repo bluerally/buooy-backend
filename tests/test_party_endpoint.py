@@ -308,7 +308,8 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
     # 응답 검증
     assert response.status_code == 200
     assert response_data["sport_name"] == "Freediving"
-    assert response_data["participants_info"] == "4/10"
+    assert response_data["max_participants"] == 10
+    assert response_data["current_participants"] == 4
     assert response_data["organizer_profile"]["name"] == "Organizer User"
     assert len(response_data["approved_participants"]) == 3
     assert len(response_data["pending_participants"]) == 2
