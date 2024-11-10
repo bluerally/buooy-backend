@@ -45,6 +45,10 @@ origins = [
 
 # Middleware
 app.add_middleware(
+    LimitUploadSizeMiddleware,
+    max_upload_size=10 * 1024 * 1024,  # 10MB
+)
+app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
@@ -52,10 +56,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuthMiddleware)
-app.add_middleware(
-    LimitUploadSizeMiddleware,
-    max_upload_size=10 * 1024 * 1024,  # 10MB
-)
 
 test_router = APIRouter(
     prefix="/api/test",
