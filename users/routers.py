@@ -388,7 +388,7 @@ async def get_test_access_token(user_id: int) -> TestTokenInfo:
     )
 
 
-@user_router.post(
+@user_router.get(
     "/party/stats",
     response_model=UserPartyStatisticsResponse,
     status_code=status.HTTP_200_OK,
