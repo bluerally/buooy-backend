@@ -311,7 +311,7 @@ async def test_get_party_details_success(client: AsyncClient) -> None:
     assert response_data["max_participants"] == 10
     assert response_data["current_participants"] == 4
     assert response_data["organizer_profile"]["name"] == "Organizer User"
-    assert len(response_data["approved_participants"]) == 3
+    assert len(response_data["approved_participants"]) == 4
     assert len(response_data["pending_participants"]) == 2
 
     # 의존성 오버라이드 초기화

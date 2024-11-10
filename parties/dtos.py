@@ -22,7 +22,8 @@ class PartyInfo(BaseModel):
 
 
 class ParticipantProfile(UserSimpleProfile):
-    participation_id: int
+    participation_id: Optional[int] = None
+    is_organizer: bool = False
 
 
 class PartyListDetail(PartyInfo):

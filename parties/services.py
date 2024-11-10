@@ -256,6 +256,14 @@ class PartyDetailService:
                 )
                 participants_id_list.append(participant.participant_user.id)
 
+        # 파티장도 파티원 리스트에 포함
+        approved_participants.append(
+            ParticipantProfile(
+                profile_picture=self.party.organizer_user.profile_image,
+                name=self.party.organizer_user.name,
+                user_id=self.party.organizer_user_id,
+            )
+        )
         return PartyDetail(
             id=self.party.id,
             sport_name=self.party.sport.name,
@@ -263,7 +271,7 @@ class PartyDetailService:
             gather_date=self.party.gather_at.strftime(FORMAT_YYYY_MM_DD),
             gather_time=self.party.gather_at.strftime(FORMAT_HH_MM),
             max_participants=self.party.participant_limit,
-            current_participants=len(approved_participants) + 1,
+            current_participants=len(approved_participants),
             price=self.party.participant_cost,
             body=self.party.body,
             organizer_profile=UserSimpleProfile(
