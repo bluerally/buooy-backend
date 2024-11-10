@@ -262,6 +262,7 @@ class PartyDetailService:
                 profile_picture=self.party.organizer_user.profile_image,
                 name=self.party.organizer_user.name,
                 user_id=self.party.organizer_user_id,
+                is_organizer=True,
             )
         )
         return PartyDetail(
