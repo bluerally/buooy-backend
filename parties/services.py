@@ -368,6 +368,18 @@ class PartyDetailService:
             is_active=self.party.is_active,
         )
 
+    async def delete_party(self, user: User) -> None:
+        """파티 삭제(파티 생성자일 경우에만 삭제 가능"""
+        if self.party.organizer_user_id != user.id:
+            raise PermissionError("Only the organizer can delete this party.")
+
+        await PartyParticipant.filter(party=self.party).delete()
+        await PartyComment.filter(party=self.party).delete()
+        await PartyLike.filter(party=self.party).delete()
+
+        # 파티 최종 삭제
+        await self.party.delete()
+
 
 class PartyListService:
     def __init__(self, user: Optional[User] = None) -> None:

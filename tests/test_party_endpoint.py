@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 from httpx import AsyncClient
 from starlette import status
@@ -707,4 +709,109 @@ async def test_get_participated_party_list_success(client: AsyncClient) -> None:
     assert len(response_data) == 2
 
     # 의존성 오버라이드 초기화
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_organizer_can_delete_party(client: AsyncClient) -> None:
+    # Create a user (organizer)
+    organizer = await User.create(
+        email="organizer@example.com",
+        sns_id="organizer_sns_id",
+        name="Organizer User",
+        profile_image="https://path/to/image",
+    )
+
+    # Create a sport
+    sport = await Sport.create(name="Test Sport")
+
+    # Create a party organized by the user
+    party = await Party.create(
+        title="Organizer's Party",
+        body="Party Body",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=2),
+        organizer_user=organizer,
+        sport=sport,
+        participant_limit=10,
+        participant_cost=100,
+        place_id=1111,
+        place_name="Place",
+        address="Address",
+        longitude=37.1234,
+        latitude=127.5678,
+    )
+
+    # Override dependency to use the organizer as the current user
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: organizer
+
+    # Call the DELETE endpoint
+    response = await client.delete(f"/api/party/{party.id}")
+
+    # Assert the response
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Verify that the party is deleted
+    deleted_party = await Party.get_or_none(id=party.id)
+    assert deleted_party is None
+
+    # Clean up dependency overrides
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_non_organizer_cannot_delete_party(client: AsyncClient) -> None:
+    # Create a user (organizer)
+    organizer = await User.create(
+        email="organizer@example.com",
+        sns_id="organizer_sns_id",
+        name="Organizer User",
+        profile_image="https://path/to/image",
+    )
+
+    # Create another user
+    user = await User.create(
+        email="user@example.com",
+        sns_id="user_sns_id",
+        name="Regular User",
+        profile_image="https://path/to/image",
+    )
+
+    # Create a sport
+    sport = await Sport.create(name="Test Sport")
+
+    # Create a party organized by the organizer
+    party = await Party.create(
+        title="Organizer's Party",
+        body="Party Body",
+        gather_at=datetime.now(ZoneInfo("UTC")) + timedelta(days=2),
+        organizer_user=organizer,
+        sport=sport,
+        participant_limit=10,
+        participant_cost=100,
+        place_id=1111,
+        place_name="Place",
+        address="Address",
+        longitude=37.1234,
+        latitude=127.5678,
+    )
+
+    # Override dependency to use the regular user as the current user
+    from main import app
+
+    app.dependency_overrides[get_current_user] = lambda: user
+
+    # Call the DELETE endpoint
+    response = await client.delete(f"/api/party/{party.id}")
+
+    # Assert the response
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "Only the organizer can delete this party."
+
+    # Verify that the party still exists
+    existing_party = await Party.get_or_none(id=party.id)
+    assert existing_party is not None
+
+    # Clean up dependency overrides
     app.dependency_overrides.clear()

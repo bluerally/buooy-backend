@@ -350,3 +350,28 @@ async def get_participated_party(
         return party_list
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@party_router.delete(
+    "/{party_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        204: {"description": "Party deleted successfully."},
+        403: {"description": "User is not the organizer."},
+        404: {"description": "Party not found."},
+    },
+)
+async def delete_party(
+    party_id: int,
+    user: User = Depends(get_current_user),
+) -> None:
+    """
+    파티 삭제 api.
+    """
+    try:
+        service = await PartyDetailService.create(party_id)
+        await service.delete_party(user)
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+    except PermissionError as pe:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
