@@ -557,7 +557,7 @@ async def test_get_user_party_statistics(client: AsyncClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
 
     # Call the API endpoint
-    response = await client.post("/api/user/party/stats")
+    response = await client.get("/api/user/party/stats")
 
     # Assert the response
     assert response.status_code == status.HTTP_200_OK
