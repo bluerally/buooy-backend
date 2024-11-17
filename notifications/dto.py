@@ -29,3 +29,7 @@ class NotificationReadDto(BaseModel):
 class NotificationListDto(BaseModel):
     notifications: List[NotificationDto]
     total_pages: int
+
+
+class NotificationUnreadCountDto(BaseModel):
+    count: int

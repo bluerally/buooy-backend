@@ -78,3 +78,17 @@ class NotificationService:
         return NotificationListDto(
             notifications=notification_list, total_pages=total_pages
         )
+
+    async def get_unread_notification_count(self) -> int:
+        # Get IDs of notifications that the user has read
+        read_notification_ids = await NotificationRead.filter(
+            user=self.user
+        ).values_list("notification_id", flat=True)
+
+        # Count notifications that are either targeted to the user or global, and not in the read list
+        unread_count = await Notification.filter(
+            (Q(target_user=self.user) | Q(is_global=True))
+            & ~Q(id__in=read_notification_ids)
+        ).count()
+
+        return unread_count or 0

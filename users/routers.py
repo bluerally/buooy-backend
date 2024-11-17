@@ -17,12 +17,10 @@ from common.constants import (
 )
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
-from notifications.dto import NotificationListDto
-from notifications.service import NotificationService
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
-from users.dto.request import NotificationReadRequest, UserProfileUpdateRequest
+from users.dto.request import UserProfileUpdateRequest
 from users.dto.request import (
     RedirectUrlInfoResponse,
     AccessTokenRequest,
@@ -331,31 +329,6 @@ async def update_self_profile_image(
         profile_image=profile_image,
     )
     return updated_profile
-
-
-@user_router.get(
-    "/notifications",
-    response_model=NotificationListDto,
-    status_code=status.HTTP_200_OK,
-)
-async def get_user_notifications(
-    user: User = Depends(get_current_user),
-    page: int = 1,
-) -> NotificationListDto:
-    service = NotificationService(user)
-    notification_list = await service.get_user_notifications(page=page)
-    return notification_list
-
-
-@user_router.post(
-    "/notifications/read", response_model=None, status_code=status.HTTP_201_CREATED
-)
-async def read_user_notifications(
-    body: NotificationReadRequest, user: User = Depends(get_current_user)
-) -> str:
-    service = NotificationService(user)
-    await service.mark_notifications_as_read(body.read_notification_list)
-    return "Notifications successfully read"
 
 
 @user_router.get(
