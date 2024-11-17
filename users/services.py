@@ -80,7 +80,8 @@ class SelfProfileService:
     async def get_party_statistics(self) -> UserPartyStatisticsResponse:
         created_count = await Party.filter(organizer_user=self.user).count()
         participated_count = await PartyParticipant.filter(
-            participant_user=self.user, status=ParticipationStatus.APPROVED
+            participant_user=self.user,
+            status__in=(ParticipationStatus.APPROVED, ParticipationStatus.PENDING),
         ).count()
         liked_count = await PartyLike.filter(user=self.user).count()
         return UserPartyStatisticsResponse(
