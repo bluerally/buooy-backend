@@ -36,7 +36,7 @@ jobs:
         docker push bluerally/bluerally-be:$GIT_TAG
 
     - name: Zip the build
-      run: zip -r blue-rally-build.zip .
+      run: zip -r buooy-build.zip .
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v3
@@ -49,15 +49,15 @@ jobs:
       run: |
         GIT_TAG=${GITHUB_REF#refs/tags/}
         echo $GIT_TAG > metadata.txt
-        aws s3 cp metadata.txt s3://blue-rally/metadata.txt
+        aws s3 cp metadata.txt s3://buooy/metadata.txt
 
     - name: Upload to Amazon S3
-      run: aws s3 cp blue-rally-build.zip s3://blue-rally/blue-rally-build.zip
+      run: aws s3 cp buooy-build.zip s3://buooy/buooy-build.zip
 
     - name: Trigger AWS CodeDeploy
       run: |
         aws deploy create-deployment \
-        --application-name blue-rally-deploy \
+        --application-name buooy-deploy \
         --deployment-config-name CodeDeployDefault.OneAtATime \
-        --deployment-group-name blue-rally-deploy-group \
-        --s3-location bucket=blue-rally,bundleType=zip,key=blue-rally-build.zip
+        --deployment-group-name buooy-deploy-group \
+        --s3-location bucket=buooy,bundleType=zip,key=buooy-build.zip
