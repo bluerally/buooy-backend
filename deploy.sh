@@ -37,16 +37,16 @@ aws s3 cp s3://buooy/metadata.txt metadata.txt
 IMAGE_TAG=$(cat metadata.txt)
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > Docker 이미지 다운로드: $IMAGE_TAG" >> $DEPLOY_LOG
-docker pull bluerally/bluerally-be:$IMAGE_TAG 2>&1 | tee -a $DEPLOY_LOG
+sudo docker pull bluerally/bluerally-be:$IMAGE_TAG 2>&1 | tee -a $DEPLOY_LOG
 
 # 기존 컨테이너 중지 및 삭제
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 기존 컨테이너 정리" >> $DEPLOY_LOG
-docker stop buooy-be || true
-docker rm buooy-be || true
+sudo docker stop buooy-be || true
+sudo docker rm buooy-be || true
 
 # 새 컨테이너 실행
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 새 컨테이너 실행" >> $DEPLOY_LOG
-docker run -d \
+sudo docker run -d \
   --name buooy-be \
   -p 8080:8080 \
   -v /home/ec2-user/logs:/app/logs \
@@ -55,6 +55,6 @@ docker run -d \
 
 # 오래된 Docker 이미지 정리
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 오래된 Docker 이미지 정리" >> $DEPLOY_LOG
-docker image prune -a -f 2>&1 | tee -a $DEPLOY_LOG
+sudo docker image prune -a -f 2>&1 | tee -a $DEPLOY_LOG
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 배포 완료" >> $DEPLOY_LOG
