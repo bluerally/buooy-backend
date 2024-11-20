@@ -26,10 +26,10 @@ ENVIRONMENT_VARS=(
 )
 
 # Docker run 명령어에 사용할 환경변수 옵션 생성
-ENV_OPTIONS=""
+ENV_OPTIONS=()
 for var in "${ENVIRONMENT_VARS[@]}"; do
   value=$(aws ssm get-parameter --name "/$var" --query "Parameter.Value" --output text)
-  ENV_OPTIONS+=" -e $var='$value'"
+  ENV_OPTIONS+=( -e "$var=$value" )
 done
 
 # S3에서 이미지 태그 가져오기
@@ -50,7 +50,7 @@ sudo docker run -d \
   --name buooy-be \
   -p 8080:8080 \
   -v /home/ec2-user/logs:/app/logs \
-  $ENV_OPTIONS \
+  "${ENV_OPTIONS[@]}" \
   bluerally/bluerally-be:$IMAGE_TAG 2>&1 | tee -a $DEPLOY_LOG
 
 # Aerich 데이터베이스 마이그레이션 실행
