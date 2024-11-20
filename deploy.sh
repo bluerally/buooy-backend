@@ -28,7 +28,10 @@ ENVIRONMENT_VARS=(
 # Docker run 명령어에 사용할 환경변수 옵션 생성
 ENV_OPTIONS=()
 for var in "${ENVIRONMENT_VARS[@]}"; do
-  value=$(aws ssm get-parameter --name "/$var" --query "Parameter.Value" --output text)
+  value=$(aws ssm get-parameter --name "/$var" --query "Parameter.Value" --output text 2>> $DEPLOY_LOG)
+  if [ -z "$value" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') > 경고: 환경 변수 $var의 값이 비어 있습니다." >> $DEPLOY_LOG
+  fi
   ENV_OPTIONS+=( -e "$var=$value" )
 done
 
