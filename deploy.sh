@@ -53,6 +53,10 @@ sudo docker run -d \
   $ENV_OPTIONS \
   bluerally/bluerally-be:$IMAGE_TAG 2>&1 | tee -a $DEPLOY_LOG
 
+# Aerich 데이터베이스 마이그레이션 실행
+echo "$(date '+%Y-%m-%d %H:%M:%S') > Running Aerich database migrations" >> $DEPLOY_LOG
+sudo docker exec buooy-be aerich upgrade 2>&1 | tee -a $DEPLOY_LOG
+
 # 오래된 Docker 이미지 정리
 echo "$(date '+%Y-%m-%d %H:%M:%S') > 오래된 Docker 이미지 정리" >> $DEPLOY_LOG
 sudo docker image prune -a -f 2>&1 | tee -a $DEPLOY_LOG
