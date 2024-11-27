@@ -26,7 +26,7 @@ IS_TEST = APP_ENV == APP_ENV_TEST
 LOGIN_REDIRECT_URL = getenv("LOGIN_REDIRECT_URL", default="http://localhost:3000")
 
 # S3
-S3_BUCKET = "blue-rally"
+S3_BUCKET = "buooy"
 AWS_REGION = "ap-northeast-2"
 AWS_S3_URL = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com"
 AWS_S3_ACCESS_KEY = getenv("S3_ACCESS_KEY", default="")
