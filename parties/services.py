@@ -234,6 +234,17 @@ class PartyDetailService:
         approved_participants = []
         pending_participants = []
         participants_id_list = []
+
+        # 파티장도 파티원 리스트에 포함
+        approved_participants.append(
+            ParticipantProfile(
+                profile_picture=self.party.organizer_user.profile_image,
+                name=self.party.organizer_user.name,
+                user_id=self.party.organizer_user_id,
+                is_organizer=True,
+            )
+        )
+
         for participant in participants:
             if participant.status == ParticipationStatus.PENDING:
                 pending_participants.append(
@@ -256,15 +267,6 @@ class PartyDetailService:
                 )
                 participants_id_list.append(participant.participant_user.id)
 
-        # 파티장도 파티원 리스트에 포함
-        approved_participants.append(
-            ParticipantProfile(
-                profile_picture=self.party.organizer_user.profile_image,
-                name=self.party.organizer_user.name,
-                user_id=self.party.organizer_user_id,
-                is_organizer=True,
-            )
-        )
         return PartyDetail(
             id=self.party.id,
             sport_name=self.party.sport.name,
