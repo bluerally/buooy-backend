@@ -434,8 +434,11 @@ class PartyListService:
 
             if search_query:
                 # TODO 쿼리 개선 필요
-                query &= Q(title__icontains=search_query) | Q(
-                    place_name__icontains=search_query
+                query &= (
+                    Q(title__icontains=search_query)
+                    | Q(place_name__icontains=search_query)
+                    | Q(body__icontains=search_query)
+                    | Q(sport__name__icontains=search_query)
                 )
                 # query &= (Q(title__icontains=search_query) | Q(body__icontains=search_query) | Q(place_name__icontains=search_query))
 
