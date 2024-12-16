@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 from tortoise import Tortoise
 
+from admin.routers import admin_router
 from common.config import TORTOISE_ORM
 from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware, LimitUploadSizeMiddleware
@@ -68,6 +69,7 @@ app.include_router(user_router)
 app.include_router(party_router)
 app.include_router(feedback_router)
 app.include_router(notification_router)
+app.include_router(admin_router)
 
 
 # Swagger UI 권한 설정
