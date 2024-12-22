@@ -201,6 +201,42 @@ async def test_organizer_accepts_participation(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_organizer_cancels_participation(client: AsyncClient) -> None:
+    organizer_user = await User.create(name="Organizer User")
+    participant_user = await User.create(name="Participant User")
+    test_party = await Party.create(title="Test Party", organizer_user=organizer_user)
+
+    # 참가 신청 생성
+    participation = await PartyParticipant.create(
+        party=test_party,
+        participant_user=participant_user,
+        status=ParticipationStatus.APPROVED,
+    )
+
+    from main import app
+
+    # 파티장 권한으로 로그인
+    app.dependency_overrides[get_current_user] = lambda: organizer_user
+
+    # 참가 신청 수락
+    response = await client.post(
+        f"/api/party/organizer/{test_party.id}/status-change/{participation.id}",
+        json={"new_status": ParticipationStatus.CANCELLED.value},
+    )
+    assert response.status_code == 200
+    changed_participation = await PartyParticipant.get_or_none(id=participation.id)
+    assert changed_participation is not None
+    assert changed_participation.status == ParticipationStatus.CANCELLED
+    # 파티원 알람(파티 수락)
+    assert (
+        await Notification.get_or_none(
+            related_id=test_party.id, target_user=participant_user
+        )
+        is not None
+    )
+
+
+@pytest.mark.asyncio
 async def test_success_participant_cancel_participation(client: AsyncClient) -> None:
     organizer_user = await User.create(name="Organizer User")
     participant_user = await User.create(name="Participant User")

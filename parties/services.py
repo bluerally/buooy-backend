@@ -141,6 +141,7 @@ class PartyParticipateService:
         if new_status not in (
             ParticipationStatus.APPROVED,
             ParticipationStatus.REJECTED,
+            ParticipationStatus.CANCELLED,
         ):
             raise ValueError("Invalid status change requested by organizer.")
 
