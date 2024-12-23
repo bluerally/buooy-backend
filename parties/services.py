@@ -620,6 +620,7 @@ class PartyCommentService:
                 )
                 notification_info = NotificationSpecificDto(
                     type=NOTIFICATION_TYPE_PARTY,
+                    classification=NOTIFICATION_CLASSIFY_PARTY_COMMENT,
                     related_id=self.party_id,
                     message=message,
                     is_global=False,
