@@ -158,14 +158,12 @@ async def social_auth_callback(
                 user.profile_image = user_info.profile_image
                 await user.save()
 
-            # uid 생성(인증한 유저 확인용)
-            r = RedisManager()
-            user_identify_uuid = str(uuid.uuid4())
-            cache_key = CACHE_KEY_LOGIN_REDIRECT_UUID.format(uuid=user_identify_uuid)
-            r.set_value(cache_key, [user.id, is_new_user])
-            return RedirectResponse(
-                url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?uid={user_identify_uuid}"
-            )
+        # Access, Refresh 토큰 생성 및 저장
+        access_token = create_access_token(data={"user_id": user.id})
+        refresh_token = await create_refresh_token(user)
+        return RedirectResponse(
+            url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?access_token={access_token}&refresh_token={refresh_token}&is_new_user={1 if is_new_user else 0}"
+        )
     except Exception:
         logger.error(f"[AUTH CALLBACK] Exception occurred: {traceback.format_exc()}")
         raise HTTPException(
