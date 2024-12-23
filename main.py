@@ -125,8 +125,8 @@ def custom_openapi() -> Any:
 
 
 # app의 openapi 함수를 교체
-app.openapi = custom_openapi
-app.openapi_version = "3.0.2"
+# app.openapi = custom_openapi
+# app.openapi_version = "3.0.2"
 
 
 @app.get("/api/docs", include_in_schema=False)
