@@ -523,7 +523,7 @@ class PartyListService:
             gather_time=party.gather_at.strftime(FORMAT_HH_MM)
             if party.gather_at
             else "",
-            participants_info=f"{approved_participants}/{party.participant_limit}",
+            participants_info=f"{approved_participants + 1}/{party.participant_limit}",
             price=party.participant_cost,
             body=party.body,
             organizer_profile=UserSimpleProfile(
