@@ -239,7 +239,9 @@ class PartyDetailService:
         # 파티장도 파티원 리스트에 포함
         approved_participants.append(
             ParticipantProfile(
-                profile_picture=self.party.organizer_user.profile_image,
+                profile_picture=self.party.organizer_user.profile_image
+                if hasattr(self.party.organizer_user, "profile_image")
+                else "",
                 name=self.party.organizer_user.name,
                 user_id=self.party.organizer_user_id,
                 is_organizer=True,
