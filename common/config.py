@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 from zoneinfo import ZoneInfo
 
+from mixpanel import Mixpanel, Consumer
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from tortoise import Tortoise
@@ -77,6 +78,9 @@ MONGO_URI = getenv("MONGO_URI", default="mongodb://username:password@localhost:2
 MONGO_DATABASE = getenv("MONGODB_DATABASE", "blue-rally")
 MONGO_LOGGING_COLLECTION = "logs"
 
+# Mixpanel
+MIXPANEL_TOKEN = getenv("MIXPANEL_TOKEN", "")
+mixpanel_ins = Mixpanel(MIXPANEL_TOKEN, consumer=Consumer(verify_cert=False))
 
 # 로깅 설정
 # LOGGING_CONFIG = {

@@ -3,6 +3,12 @@ from starlette import status
 from common.config import logger
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
+from common.mixpanel_constants import (
+    MIXPANEL_EVENT_VIEW_NOTIFICATIONS,
+    MIXPANEL_PROPERTY_KEY_USER_ID,
+    MIXPANEL_EVENT_READ_NOTIFICATIONS,
+)
+from common.utils import track_mixpanel
 from notifications.dto import NotificationUnreadCountDto, NotificationListDto
 from notifications.service import NotificationService
 from users.dto.request import NotificationReadRequest
@@ -25,6 +31,14 @@ async def get_user_notifications(
 ) -> NotificationListDto:
     service = NotificationService(user)
     notification_list = await service.get_user_notifications(page=page)
+    # mixpanel 트래킹
+    track_mixpanel(
+        distinct_id=user.id,
+        event_name=MIXPANEL_EVENT_VIEW_NOTIFICATIONS,
+        properties={
+            MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+        },
+    )
     return notification_list
 
 
@@ -36,6 +50,14 @@ async def read_user_notifications(
 ) -> str:
     service = NotificationService(user)
     await service.mark_notifications_as_read(body.read_notification_list)
+    # mixpanel 트래킹
+    track_mixpanel(
+        distinct_id=user.id,
+        event_name=MIXPANEL_EVENT_READ_NOTIFICATIONS,
+        properties={
+            MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+        },
+    )
     return "Notifications successfully read"
 
 

@@ -17,6 +17,15 @@ from common.constants import (
 )
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
+from common.mixpanel_constants import (
+    MIXPANEL_EVENT_SIGN_IN,
+    MIXPANEL_PROPERTY_KEY_USER_ID,
+    MIXPANEL_EVENT_SIGN_UP,
+    MIXPANEL_EVENT_LOGOUT,
+    MIXPANEL_EVENT_CHANGE_PROFILE_IMAGE,
+    MIXPANEL_EVENT_CHANGE_PROFILE,
+)
+from common.utils import track_mixpanel
 from parties.dtos import PartyListDetail
 from parties.services import PartyLikeService
 from users.auth import GoogleAuth, KakaoAuth, SocialLogin, NaverAuth
@@ -147,6 +156,7 @@ async def social_auth_callback(
         user = await User.get_or_none(sns_id=user_info.sns_id)
         if not user:
             user = await User.create(**user_info.__dict__)
+
         else:
             is_new_user = False
             # 기존 사용자 정보 업데이트
@@ -161,6 +171,16 @@ async def social_auth_callback(
         # Access, Refresh 토큰 생성 및 저장
         access_token = create_access_token(data={"user_id": user.id})
         refresh_token = await create_refresh_token(user)
+
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_SIGN_UP
+            if is_new_user
+            else MIXPANEL_EVENT_SIGN_IN,
+            properties={MIXPANEL_PROPERTY_KEY_USER_ID: user.id},
+        )
+
         return RedirectResponse(
             url=f"{LOGIN_REDIRECT_URL}/login/{platform.value}?access_token={access_token}&refresh_token={refresh_token}&is_new_user={1 if is_new_user else 0}"
         )
@@ -244,6 +264,12 @@ async def logout(user: User = Depends(get_current_user)) -> str:
     # 사용자와 연관된 모든 리프레시 토큰을 비활성화
     await UserToken.filter(user=user, is_active=True).update(is_active=False)
 
+    # mixpanel 트래킹
+    track_mixpanel(
+        distinct_id=user.id,
+        event_name=MIXPANEL_EVENT_LOGOUT,
+        properties={MIXPANEL_PROPERTY_KEY_USER_ID: user.id},
+    )
     return "Logged out successfully"
 
 
@@ -310,6 +336,14 @@ async def update_self_profile(
         introduction=body.introduction,
         interested_sports_ids=body.interested_sports_ids,
     )
+    # mixpanel 트래킹
+    track_mixpanel(
+        distinct_id=user.id,
+        event_name=MIXPANEL_EVENT_CHANGE_PROFILE,
+        properties={
+            MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+        },
+    )
     return updated_profile
 
 
@@ -325,6 +359,14 @@ async def update_self_profile_image(
     service = SelfProfileService(user)
     updated_profile = await service.update_profile_image(
         profile_image=profile_image,
+    )
+    # mixpanel 트래킹
+    track_mixpanel(
+        distinct_id=user.id,
+        event_name=MIXPANEL_EVENT_CHANGE_PROFILE_IMAGE,
+        properties={
+            MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+        },
     )
     return updated_profile
 

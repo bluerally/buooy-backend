@@ -38,6 +38,7 @@ python-multipart = "^0.0.9"
 motor = "^3.3.2"
 pymongo = {extras = ["srv"], version = "^4.6.3"}
 apscheduler = "^3.10.4"
+mixpanel = "^4.10.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -6,7 +6,22 @@ from fastapi import APIRouter, status, Depends, Request, HTTPException, Query
 
 from common.dependencies import get_current_user
 from common.logging_configs import LoggingAPIRoute
-from common.utils import convert_string_to_datetime
+from common.mixpanel_constants import (
+    MIXPANEL_PROPERTY_KEY_USER_ID,
+    MIXPANEL_EVENT_PARTY_CREATE,
+    MIXPANEL_EVENT_PARTY_UPDATE,
+    MIXPANEL_EVENT_PARTY_PARTICIPATE,
+    MIXPANEL_EVENT_CHANGE_PARTY_PARTICIPATION_STATUS,
+    MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_STATUS,
+    MIXPANEL_EVENT_ORGANIZER_CHANGE_PARTY_PARTICIPATION_STATUS,
+    MIXPANEL_PROPERTY_KEY_PARTY_ID,
+    MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_ID,
+    MIXPANEL_EVENT_PARTY_COMMENT,
+    MIXPANEL_EVENT_LIKE_PARTY,
+    MIXPANEL_EVENT_CANCEL_LIKE_PARTY,
+    MIXPANEL_EVENT_DELETE_PARTY,
+)
+from common.utils import convert_string_to_datetime, track_mixpanel
 from parties.dto.request import (
     PartyDetailRequest,
     RefreshTokenRequest,
@@ -76,6 +91,16 @@ async def create_party(
             organizer_user=user,
             notice=request_data.notice,
         )
+
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_PARTY_CREATE,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party.id,
+            },
+        )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     # 생성된 파티 정보를 응답
@@ -91,6 +116,15 @@ async def update_party(
     try:
         service = await PartyDetailService.create(party_id=party_id)
         party_info = await service.update_party(user, body)
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_PARTY_UPDATE,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
         return party_info
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -109,6 +143,15 @@ async def participate_in_party(
     service = await PartyParticipateService.create(party_id, user)
     try:
         await service.participate()
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_PARTY_PARTICIPATE,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
         return "Participation requested successfully."
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -127,6 +170,17 @@ async def participant_change_participation_status(
     try:
         changed_participation = await service.participant_change_participation_status(
             new_status
+        )
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_CHANGE_PARTY_PARTICIPATION_STATUS,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_STATUS: new_status.value,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+                MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_ID: changed_participation.id,
+            },
         )
         return PartyParticipationStatusChangeResponse(
             participation_id=changed_participation.id, status=new_status
@@ -151,6 +205,17 @@ async def organizer_change_participation_status(
     try:
         changed_participation = await service.organizer_change_participation_status(
             participation_id, new_status
+        )
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_ORGANIZER_CHANGE_PARTY_PARTICIPATION_STATUS,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_STATUS: new_status.value,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+                MIXPANEL_PROPERTY_KEY_PARTY_PARTICIPATION_ID: changed_participation.id,
+            },
         )
         return PartyParticipationStatusChangeResponse(
             participation_id=changed_participation.id,
@@ -235,6 +300,15 @@ async def post_party_comment(
     try:
         service = PartyCommentService(party_id, user)
         posted_comment = await service.post_comment(comment_content)
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_PARTY_COMMENT,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError as e:
@@ -296,6 +370,15 @@ async def add_liked_party(
     service = PartyLikeService(user)
     try:
         await service.party_like(party_id)
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_LIKE_PARTY,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
         return f"Party-{party_id} added to liked list"
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -313,6 +396,15 @@ async def cancel_liked_party(
     service = PartyLikeService(user)
     try:
         await service.cancel_party_like(party_id)
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_CANCEL_LIKE_PARTY,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
         return f"Party-{party_id} like canceled"
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -371,6 +463,15 @@ async def delete_party(
     try:
         service = await PartyDetailService.create(party_id)
         await service.delete_party(user)
+        # mixpanel 트래킹
+        track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_DELETE_PARTY,
+            properties={
+                MIXPANEL_PROPERTY_KEY_USER_ID: user.id,
+                MIXPANEL_PROPERTY_KEY_PARTY_ID: party_id,
+            },
+        )
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
     except PermissionError as pe:

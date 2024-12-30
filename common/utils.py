@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Optional, Any
@@ -6,7 +7,7 @@ from typing import Optional, Any
 import aioboto3
 import bcrypt
 from fastapi import UploadFile
-from common.config import logger
+from common.config import logger, IS_TEST, mixpanel_ins as mp
 from common.constants import FORMAT_YYYY_MM_DD_T_HH_MM_SS_TZ
 
 
@@ -46,3 +47,53 @@ async def s3_upload_file(folder: str, file: UploadFile) -> str:
             return ""
 
     return filename
+
+
+def track_mixpanel(
+    distinct_id: Any = None,
+    event_name: str = "",
+    properties: Optional[dict[str, Any]] = None,
+) -> None:
+    """
+
+    :rtype: object
+    """
+    if IS_TEST:
+        return
+
+    if not event_name:
+        return
+
+    if properties is None:
+        properties = {}
+
+    if not distinct_id:
+        distinct_id = str(uuid.uuid4())
+
+    properties.update(
+        {
+            "$os": "Server",
+        }
+    )
+
+    max_retry_num = 3
+    try_num = 0
+    for _ in range(max_retry_num):
+        try:
+            mp.track(distinct_id, event_name, properties)
+            logger.info(
+                f"[Mixpanel] Mixpanel Retry Info : Successed tracking after {try_num} retry , event_name: {event_name}",
+                exc_info=True,
+            )
+            break
+        except Exception as e:
+            logger.error(
+                f"[Mixpanel] Mixpanel error : {e}, event_name: {event_name}",
+                exc_info=True,
+            )
+            try_num += 1
+    # for loop 완전히 실행되면 실행됨.
+    else:
+        logger.error(
+            f"[Mixpanel] Mixpanel error : Failed to track event after {max_retry_num} attempts., event_name: {event_name}"
+        )

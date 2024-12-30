@@ -1393,6 +1393,22 @@ files = [
 ]
 
 [[package]]
+name = "mixpanel"
+version = "4.10.1"
+description = "Official Mixpanel library for Python"
+optional = false
+python-versions = ">=2.7, !=3.4.*"
+files = [
+    {file = "mixpanel-4.10.1-py2.py3-none-any.whl", hash = "sha256:a7a338b7197327e36356dbc1903086e7626db6d88367ccdd732b3f3c60d3b3ed"},
+    {file = "mixpanel-4.10.1.tar.gz", hash = "sha256:29a6b5773dd34f05cf8e249f4e1d16e7b6280d6b58894551ce9a5aad7700a115"},
+]
+
+[package.dependencies]
+requests = ">=2.4.2"
+six = ">=1.9.0"
+urllib3 = "*"
+
+[[package]]
 name = "motor"
 version = "3.5.1"
 description = "Non-blocking MongoDB driver for Tornado or asyncio"
@@ -2981,4 +2997,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.0"
-content-hash = "25ef266eac313216b5a8a85f4d385a1cfe42fe634529d1dd0f23a6bcd3ea83b5"
+content-hash = "9b778eb324c50e9f75b8bdbfb8cf6e7b4a1632a999ed44d0af606fbb3c490c7e"
