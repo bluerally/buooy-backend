@@ -10,6 +10,7 @@ from mixpanel import Mixpanel, Consumer
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from tortoise import Tortoise
+from airtake import Airtake
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -81,6 +82,10 @@ MONGO_LOGGING_COLLECTION = "logs"
 # Mixpanel
 MIXPANEL_TOKEN = getenv("MIXPANEL_TOKEN", "")
 mixpanel_ins = Mixpanel(MIXPANEL_TOKEN, consumer=Consumer(verify_cert=False))
+
+# Airtake
+AIRTAKE_TOKEN = getenv("AIRTAKE_TOKEN", "")
+airtake_ins = Airtake(token=AIRTAKE_TOKEN)
 
 # 로깅 설정
 # LOGGING_CONFIG = {

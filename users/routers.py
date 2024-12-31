@@ -173,7 +173,7 @@ async def social_auth_callback(
         refresh_token = await create_refresh_token(user)
 
         # mixpanel 트래킹
-        track_mixpanel(
+        await track_mixpanel(
             distinct_id=user.id,
             event_name=MIXPANEL_EVENT_SIGN_UP
             if is_new_user
@@ -265,7 +265,7 @@ async def logout(user: User = Depends(get_current_user)) -> str:
     await UserToken.filter(user=user, is_active=True).update(is_active=False)
 
     # mixpanel 트래킹
-    track_mixpanel(
+    await track_mixpanel(
         distinct_id=user.id,
         event_name=MIXPANEL_EVENT_LOGOUT,
         properties={MIXPANEL_PROPERTY_KEY_USER_ID: user.id},
@@ -337,7 +337,7 @@ async def update_self_profile(
         interested_sports_ids=body.interested_sports_ids,
     )
     # mixpanel 트래킹
-    track_mixpanel(
+    await track_mixpanel(
         distinct_id=user.id,
         event_name=MIXPANEL_EVENT_CHANGE_PROFILE,
         properties={
@@ -361,7 +361,7 @@ async def update_self_profile_image(
         profile_image=profile_image,
     )
     # mixpanel 트래킹
-    track_mixpanel(
+    await track_mixpanel(
         distinct_id=user.id,
         event_name=MIXPANEL_EVENT_CHANGE_PROFILE_IMAGE,
         properties={
