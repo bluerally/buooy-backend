@@ -42,7 +42,7 @@ origins = [
     # "http://127.0.0.1:80",
     # "https://www.bluerally.net",
     "http://localhost:3000",
-    "https://bluerally-fe.vercel.app",
+    "https://buooy.kr",
     # "*"
 ]
 
