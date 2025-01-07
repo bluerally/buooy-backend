@@ -85,7 +85,7 @@ mixpanel_ins = Mixpanel(MIXPANEL_TOKEN, consumer=Consumer(verify_cert=False))
 
 # Airtake
 AIRTAKE_TOKEN = getenv("AIRTAKE_TOKEN", "")
-airtake_ins = Airtake(token=AIRTAKE_TOKEN)
+airtake_ins = Airtake(token=AIRTAKE_TOKEN, debug=True)
 
 # 로깅 설정
 # LOGGING_CONFIG = {
