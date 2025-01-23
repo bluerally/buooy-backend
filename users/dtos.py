@@ -22,7 +22,7 @@ class UserInfo(BaseModel):
 
 class UserSimpleProfile(BaseModel):
     user_id: int
-    profile_picture: str
+    profile_picture: Optional[str]
     name: str
 
 

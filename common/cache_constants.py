@@ -1,5 +1,9 @@
 # CACHE KEY
 CACHE_KEY_LOGIN_REDIRECT_UUID = "redirect_str:{uuid}"
+CACHE_KEY_POST_VIEWS = "post_views:{post_id}"
+CACHE_KEY_POST_LIKES = "post_likes:{post_id}"
+VIEW_COUNT_UPDATE_THRESHOLD = 10  # 조회수 DB 업데이트 임계값
+CACHE_EXPIRE_TIME = 60 * 60 * 24  # 24시간
 
 # DURATION
 DURATION_LOGIN_REDIRECT_UUID = 60

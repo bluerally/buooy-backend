@@ -14,6 +14,7 @@ from admin.routers import admin_router
 from common.config import TORTOISE_ORM
 from common.dependencies import get_admin
 from common.middlewares import AuthMiddleware, LimitUploadSizeMiddleware
+from community.routers import community_router
 from notifications.routers import notification_router
 from parties.routers import party_router
 from users.routers import user_router
@@ -71,6 +72,7 @@ app.include_router(party_router)
 app.include_router(feedback_router)
 app.include_router(notification_router)
 app.include_router(admin_router)
+app.include_router(community_router)
 
 
 # Swagger UI 권한 설정
