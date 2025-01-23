@@ -107,9 +107,12 @@ class PartyParticipateService:
     async def participant_change_participation_status(
         self, new_status: ParticipationStatus
     ) -> PartyParticipant:
-        participation = await PartyParticipant.get_or_none(
-            party=self.party, participant_user=self.user
-        ).select_related("participant_user")
+        participation = (
+            await PartyParticipant.filter(party=self.party, participant_user=self.user)
+            .select_related("participant_user")
+            .order_by("-id")
+            .first()
+        )
         if not participation:
             raise ValueError("Operation is Forbidden for the user.")
 

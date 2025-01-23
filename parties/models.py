@@ -60,6 +60,7 @@ class PartyParticipant(BaseModel):
 
     class Meta:
         table = "party_participants"
+        # unique_together = ("participant_user", "party")
 
     def __str__(self) -> str:
         return f"{self.id} - {self.party} - {self.participant_user} - {self.status}"
