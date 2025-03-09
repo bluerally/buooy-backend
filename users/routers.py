@@ -34,6 +34,7 @@ from users.dto.request import (
     RedirectUrlInfoResponse,
     AccessTokenRequest,
     RefreshTokenRequest,
+    MobileAuthRequest,
 )
 from users.dto.response import (
     AccessTokenResponse,
@@ -412,3 +413,104 @@ async def get_user_party_statisics(
     service = SelfProfileService(user)
     stats = await service.get_party_statistics()
     return stats
+
+
+@user_router.post(
+    "/auth/mobile/token",
+    response_model=AccessTokenResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def mobile_auth_token(body: MobileAuthRequest) -> AccessTokenResponse:
+    """모바일 앱에서 소셜 로그인 후 받은 토큰을 검증하고 서비스 토큰 발급"""
+    try:
+        # 파라미터 검증
+        platform = body.platform
+        token = body.token
+        user_info = body.user_info
+
+        if not platform or not token or not user_info:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Platform, token, and user_info are required",
+            )
+
+        # 플랫폼 확인 및 인증 객체 생성
+        auth: SocialLogin
+        if platform == AUTH_PLATFORM_GOOGLE:
+            auth = GoogleAuth()
+        elif platform == AUTH_PLATFORM_KAKAO:
+            auth = KakaoAuth()
+        elif platform == AUTH_PLATFORM_NAVER:
+            auth = NaverAuth()
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported platform"
+            )
+
+        # 토큰 검증 및 사용자 정보 획득
+        validated_user_info = await auth.validate_mobile_token(token, user_info)
+
+        # 기존 사용자 검색 또는 새 사용자 생성
+        is_new_user = False
+        user = await User.get_or_none(sns_id=validated_user_info.sns_id)
+
+        if not user:
+            # 새 사용자 생성
+            user = await User.create(**validated_user_info.__dict__)
+            is_new_user = True
+        else:
+            # 기존 사용자 정보 업데이트 (필요시)
+            update_needed = False
+            if validated_user_info.email and user.email != validated_user_info.email:
+                user.email = validated_user_info.email
+                update_needed = True
+            if validated_user_info.name and user.name != validated_user_info.name:
+                user.name = validated_user_info.name
+                update_needed = True
+            if (
+                validated_user_info.profile_image
+                and user.profile_image != validated_user_info.profile_image
+            ):
+                user.profile_image = validated_user_info.profile_image
+                update_needed = True
+
+            if update_needed:
+                await user.save()
+
+        # 서비스 토큰 발급
+        access_token = create_access_token(data={"user_id": user.id})
+        refresh_token = await create_refresh_token(user)
+
+        # Mixpanel 이벤트 트래킹
+        await track_mixpanel(
+            distinct_id=user.id,
+            event_name=MIXPANEL_EVENT_SIGN_UP
+            if is_new_user
+            else MIXPANEL_EVENT_SIGN_IN,
+            properties={MIXPANEL_PROPERTY_KEY_USER_ID: user.id},
+        )
+
+        # 응답 반환
+        return AccessTokenResponse(
+            user_info=UserInfo(
+                sns_id=user.sns_id,
+                email=user.email,
+                name=user.name,
+                profile_image=user.profile_image,
+            ),
+            access_token=access_token,
+            refresh_token=refresh_token,
+            is_new_user=is_new_user,
+        )
+
+    except HTTPException:
+        # 이미 발생한 HTTP 예외는 그대로 전파
+        raise
+    except Exception as e:
+        # 기타 예외는 로깅하고 500 에러 반환
+        logger.error(f"Mobile auth error: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication process failed",
+        )

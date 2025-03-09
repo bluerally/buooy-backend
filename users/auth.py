@@ -27,6 +27,12 @@ class SocialLogin(ABC):
     async def get_user_data(self, code: str) -> Any:
         pass
 
+    @abstractmethod
+    async def validate_mobile_token(
+        self, token: str, user_info: dict[str, Any]
+    ) -> UserInfo:
+        pass
+
 
 class GoogleAuth(SocialLogin):
     AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -116,6 +122,32 @@ class GoogleAuth(SocialLogin):
                 )
             return response.json()
 
+    async def validate_mobile_token(
+        self, token: str, user_info: dict[str, Any]
+    ) -> UserInfo:
+        try:
+            id_info = id_token.verify_oauth2_token(
+                token, requests.Request(), self.CLIENT_ID
+            )
+
+            # Get or update user info from token
+            sns_id = id_info.get("sub")
+            email = user_info.get("email") or id_info.get("email")
+            name = user_info.get("name") or id_info.get("name")
+            profile_image = user_info.get("profile_image") or id_info.get("picture")
+
+            return UserInfo(
+                sns_id=sns_id,
+                email=email,
+                name=name,
+                profile_image=profile_image,
+            )
+        except Exception as e:
+            logger.error(f"Google token verification error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token"
+            )
+
 
 class KakaoAuth(SocialLogin):
     AUTHORIZATION_URL = "https://kauth.kakao.com/oauth/authorize"
@@ -188,6 +220,42 @@ class KakaoAuth(SocialLogin):
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            )
+
+    async def validate_mobile_token(
+        self, token: str, user_info: dict[str, Any]
+    ) -> UserInfo:
+        try:
+            if "id_token" in user_info:
+                id_token_value = user_info.get("id_token")
+                decoded_token = await validate_kakao_id_token(
+                    id_token_value, self.CLIENT_ID
+                )
+                if decoded_token:
+                    return UserInfo(
+                        sns_id=decoded_token.get("sub"),
+                        email=user_info.get("email"),
+                        name=user_info.get("name"),
+                        profile_image=user_info.get("profile_image"),
+                    )
+
+            sns_id = user_info.get("id")
+            if not sns_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Kakao token or missing user ID",
+                )
+
+            return UserInfo(
+                sns_id=sns_id,
+                email=user_info.get("email"),
+                name=user_info.get("name"),
+                profile_image=user_info.get("profile_image"),
+            )
+        except Exception as e:
+            logger.error(f"Kakao token verification error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Kakao token"
             )
 
 
@@ -265,3 +333,19 @@ class NaverAuth(SocialLogin):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
                 )
+
+    async def validate_mobile_token(
+        self, token: str, user_info: dict[str, Any]
+    ) -> UserInfo:
+        sns_id = user_info.get("id")
+        if not sns_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Naver user ID"
+            )
+
+        return UserInfo(
+            sns_id=sns_id,
+            email=user_info.get("email"),
+            name=user_info.get("name"),
+            profile_image=user_info.get("profile_image"),
+        )
